@@ -1,0 +1,27 @@
+body{
+    background-color:#000000;
+}
+h1, p{
+    color:#105F10; 
+}
+h1{
+    font-size:56px;
+    text-shadow: 1px 0 0 #fff, -1px 0 0 #fff, 0 1px 0 #fff, 0 -1px 0 #fff, 1px 1px #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff;
+}
+p, input{
+    font-size:28px;
+}
+canvas, input{
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+#start{
+    background-color: #105F10;
+    color: white;
+    border: none;
+    padding: 15px 32px;
+    border-radius: 12px;
+}
