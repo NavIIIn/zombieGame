@@ -2,6 +2,9 @@
 * Zombie Game                                                                  *
 * Joseph Navin                                                                 *
 * June 2016                                                                    *
+* Current work:                                                                *
+*     Set objInserter.objects to be a 2d array so it can tell what walls to    *
+*     add or remove                                                            *
 *******************************************************************************/
 
 /*******************************************************************************
@@ -24,6 +27,7 @@ var ZOMBIE_HEALTH = 20;
 var ZOMBIE_DAMAGE = 8;
 var BG_CYCLE_X = 160;
 var BG_CYCLE_Y = BG_CYCLE_X*Math.sqrt(3); // Hexagon geometry
+var OBS_CYCLE = 160;
 var CENTER_X = CANVAS_WIDTH/2;
 var CENTER_Y = CANVAS_HEIGHT/2;
 var FIRE_RATE = 25;
@@ -260,7 +264,7 @@ function Inserter(obsList){
         }
         else if(wall == 'r'){
             for(var i=0; i<CANVAS_HEIGHT; i+= 2*WALL_LENGTH)
-                this.addNew(CANVAS_WIDTH+2*WALL_LENGTH, i);
+                this.addNew(CANVAS_WIDTH, i);
         }
         else if(wall == 't'){
             for(var i=0; i<CANVAS_WIDTH; i += 2*WALL_LENGTH)
@@ -268,13 +272,13 @@ function Inserter(obsList){
         }
         else if(wall == 'b'){
             for(var i=0; i<CANVAS_WIDTH; i += 2*WALL_LENGTH)
-                this.addNew(i, CANVAS_HEIGHT+2*WALL_LENGTH);
+                this.addNew(i, CANVAS_HEIGHT);
 
         }
         else {console.log('incorrect input in addNewWall');}
 
         while(this.objects.length > this.gridNumber){
-            this.objects = this.objects.shift();
+            this.objects.shift();
         }
     }
     this.getLines = function(){
@@ -295,13 +299,15 @@ function Inserter(obsList){
             v.adjust(x, y);
         });
     }
+    this.full = function(){
+        return this.objects.length > this.gridNumber;
+    }
     // initialize
     for(var i = 0; i < CANVAS_HEIGHT; i += 2*WALL_LENGTH){
         for(var j = 0; j < CANVAS_WIDTH; j+= 2*WALL_LENGTH){
             if(!withinGrid(i, CENTER_Y) ||
                !withinGrid(j, CENTER_X))
                 this.addNew(j,i);
-                console.log('added');
         }
     }
 }
@@ -342,6 +348,7 @@ function Main(){
     var score = 0;
     var gameLoop;
     var objInserter = new Inserter(obs);
+    var obstacleMovement = {x:0, y:0, dx:0, dy:0};
     //objInserter.test();
     
     // Background image
@@ -400,7 +407,6 @@ function Main(){
 
     // Update
     function update(){
-    //console.log('update called');
         // Display
         document.getElementById("score").innerHTML = "Score: " + score;
         document.getElementById("health").innerHTML = "Health: " + p1.health;
@@ -491,8 +497,33 @@ function Main(){
         ctx.beginPath();
         ctx.drawImage(bg,worldMovement.x,worldMovement.y);
 
+        obstacleMovement.dx = PLAYER_SPEED*raw_x*normalize(raw_x, raw_y);
+        obstacleMovement.dy = PLAYER_SPEED*raw_y*normalize(raw_x, raw_y);
+        obstacleMovement.x += obstacleMovement.dx;
+        obstacleMovement.y += obstacleMovement.dy;
+        if (obstacleMovement.x > 0 && !objInserter.full()){
+            obstacleMovement.x -= OBS_CYCLE;
+            objInserter.addNewWall('l');
+            console.log('add wall left');
+        }
+        if (obstacleMovement.x < -OBS_CYCLE && !objInserter.full()){
+            obstacleMovement.x += OBS_CYCLE;
+            objInserter.addNewWall('r');
+            console.log('add wall right');
+        }
+        if (obstacleMovement.y > 0 && !objInserter.full()){
+            obstacleMovement.y -= OBS_CYCLE;
+            objInserter.addNewWall('t');
+            console.log('add wall top');
+        }
+        if (obstacleMovement.y < -OBS_CYCLE && !objInserter.full()){
+            obstacleMovement.y += OBS_CYCLE;
+            objInserter.addNewWall('b');
+            console.log('add wall bottom');
+        }
+            
         objInserter.objects.forEach(function(v, i, arr){
-            v.adjust(worldMovement.dx, worldMovement.dy);
+            v.adjust(obstacleMovement.dx, obstacleMovement.dy);
         });
 
         // foreground
@@ -530,7 +561,6 @@ function Main(){
 
     // run game
     document.getElementById("start").onclick = function(){
-        worldMovement = {x:0, y:0, dx:0, dy:0};
         clearInterval(gameLoop);
         gameLoop=setInterval(mainLoop, FRAME_TIME);
     }
