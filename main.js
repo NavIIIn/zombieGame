@@ -250,7 +250,6 @@ function Inserter(obsList){
     this.addNew = function(x, y){
         var rand = Math.floor(Math.random()*(this.types.length));
         var obj = this.types[rand].copy();
-        //obj.lines[0].print()
         this.objects.push(obj.adjust(x, y));
     }
     this.addNewWall = function(wall){
@@ -276,7 +275,6 @@ function Inserter(obsList){
 
         while(this.objects.length > this.gridNumber){
             this.objects = this.objects.shift();
-            //console.log('loopy');
         }
     }
     this.getLines = function(){
@@ -298,7 +296,6 @@ function Inserter(obsList){
         });
     }
     // initialize
-    //console.log('testing');
     for(var i = 0; i < CANVAS_HEIGHT; i += 2*WALL_LENGTH){
         for(var j = 0; j < CANVAS_WIDTH; j+= 2*WALL_LENGTH){
             if(!withinGrid(i, CENTER_Y) ||
@@ -307,7 +304,7 @@ function Inserter(obsList){
                 console.log('added');
         }
     }
-}    
+}
 
 // Factory for map array
 function mapFactory(){
