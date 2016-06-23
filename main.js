@@ -2,9 +2,6 @@
 * Zombie Game                                                                  *
 * Joseph Navin                                                                 *
 * June 2016                                                                    *
-* Current work:                                                                *
-*     Set objInserter.objects to be a 2d array so it can tell what walls to    *
-*     add or remove                                                            *
 *******************************************************************************/
 
 /*******************************************************************************
@@ -249,42 +246,46 @@ var obs = [
 function Inserter(obsList){
     //console.log('Inserter called');
     this.types = obsList;
-    this.objects = [];
-    this.gridNumber = CANVAS_WIDTH*CANVAS_HEIGHT/Math.pow(2*WALL_LENGTH, 2) - 1;
-    this.addNew = function(x, y){
-        var rand = Math.floor(Math.random()*(this.types.length));
-        var obj = this.types[rand].copy();
-        this.objects.push(obj.adjust(x, y));
-    }
+    this.obsMap = [];
     this.addNewWall = function(wall){
         // wall (l, r, t, b) indicates which wall
+        var rand;
         if(wall == 'l'){
-            for(var i=0; i<CANVAS_HEIGHT; i+=2*WALL_LENGTH)
-                this.addNew(-2*WALL_LENGTH, i);
+            for(var i=0; i<CANVAS_HEIGHT/2/WALL_LENGTH; i++){
+                rand = Math.floor(Math.random()*(this.types.length));
+                this.obsMap[i/2*WALL_LENGTH].unshift(this.types[rand].copy().adjust(-WALL_LENGTH*2, i*WALL_LENGTH*2));
+            }
         }
         else if(wall == 'r'){
-            for(var i=0; i<CANVAS_HEIGHT; i+= 2*WALL_LENGTH)
-                this.addNew(CANVAS_WIDTH, i);
+            for(var i=0; i<CANVAS_HEIGHT; i+= 2*WALL_LENGTH){
+                rand = Math.floor(Math.random()*(this.types.length));
+                this.obsMap[i/2*WALL_LENGTH].push(this.types[rand].copy().adjust(CANVAS_WIDTH, i*WALL_LENGTH*2));
+            }
         }
         else if(wall == 't'){
-            for(var i=0; i<CANVAS_WIDTH; i += 2*WALL_LENGTH)
-                this.addNew(i, -2*WALL_LENGTH);
+            var wall = [];
+            for(var i=0; i<CANVAS_WIDTH; i += 2*WALL_LENGTH){
+                rand = Math.floor(Math.random()*(this.types.length));
+                wall.push(this.types[rand].copy().adjust(i, -2*WALL_LENGTH));
+                this.obsMap.unshift(wall);
+            }
         }
         else if(wall == 'b'){
-            for(var i=0; i<CANVAS_WIDTH; i += 2*WALL_LENGTH)
-                this.addNew(i, CANVAS_HEIGHT);
-
+            for(var i=0; i<CANVAS_WIDTH; i += 2*WALL_LENGTH){
+                rand = Math.floor(Math.random()*(this.types.length));
+                wall.push(this.types[rand].copy().adjust(i, CANVAS_HEIGHT));
+                this.obsMap.push(wall);
+            }
         }
         else {console.log('incorrect input in addNewWall');}
 
-        while(this.objects.length > this.gridNumber){
-            this.objects.shift();
-        }
     }
     this.getLines = function(){
         var lines = [];
-        this.objects.forEach(function(v, i, arr){
-            lines = lines.concat(v.lines.slice());
+        this.obsMap.forEach(function(row, j, m){
+            row.forEach(function(v, i, r){
+                lines = lines.concat(v.lines.slice());
+            });
         });
         return lines;
     }
@@ -295,21 +296,29 @@ function Inserter(obsList){
         this.addNewWall('r');
     }
     this.adjust = function(x, y){
-        objects.forEach(function(v, i, arr){
-            v.adjust(x, y);
+        this.obsMap.forEach(function(row, j, m){
+            row.forEach(function(v, i, r){
+                v.adjust(x, y);
+            });
         });
     }
-    this.full = function(){
-        return this.objects.length > this.gridNumber;
-    }
     // initialize
-    for(var i = 0; i < CANVAS_HEIGHT; i += 2*WALL_LENGTH){
-        for(var j = 0; j < CANVAS_WIDTH; j+= 2*WALL_LENGTH){
-            if(!withinGrid(i, CENTER_Y) ||
-               !withinGrid(j, CENTER_X))
-                this.addNew(j,i);
+    var rand;
+    for(var i = 0; i < CANVAS_HEIGHT/WALL_LENGTH/2; i++){
+        this.obsMap.push([]);
+        for(var j = 0; j < CANVAS_WIDTH/WALL_LENGTH/2; j++){
+            rand = Math.floor(Math.random()*(this.types.length));
+            this.obsMap[i].push(this.types[rand].copy().adjust(j*WALL_LENGTH*2, i*WALL_LENGTH*2));
         }
     }
+    //for(var i = 0; i < CANVAS_HEIGHT; i += 2*WALL_LENGTH){
+        //for(var j = 0; j < CANVAS_WIDTH; j+= 2*WALL_LENGTH){
+            //if(!withinGrid(i, CENTER_Y) ||
+               //!withinGrid(j, CENTER_X)){
+                //this.addNew(j,i);
+            //}
+        //}
+    //}
 }
 
 // Factory for map array
@@ -501,30 +510,31 @@ function Main(){
         obstacleMovement.dy = PLAYER_SPEED*raw_y*normalize(raw_x, raw_y);
         obstacleMovement.x += obstacleMovement.dx;
         obstacleMovement.y += obstacleMovement.dy;
-        if (obstacleMovement.x > 0 && !objInserter.full()){
+        if (obstacleMovement.x > 0){
             obstacleMovement.x -= OBS_CYCLE;
             objInserter.addNewWall('l');
             console.log('add wall left');
         }
-        if (obstacleMovement.x < -OBS_CYCLE && !objInserter.full()){
+        if (obstacleMovement.x < -OBS_CYCLE){
             obstacleMovement.x += OBS_CYCLE;
             objInserter.addNewWall('r');
             console.log('add wall right');
         }
-        if (obstacleMovement.y > 0 && !objInserter.full()){
+        if (obstacleMovement.y > 0){
             obstacleMovement.y -= OBS_CYCLE;
             objInserter.addNewWall('t');
             console.log('add wall top');
         }
-        if (obstacleMovement.y < -OBS_CYCLE && !objInserter.full()){
+        if (obstacleMovement.y < -OBS_CYCLE){
             obstacleMovement.y += OBS_CYCLE;
             objInserter.addNewWall('b');
             console.log('add wall bottom');
         }
-            
-        objInserter.objects.forEach(function(v, i, arr){
-            v.adjust(obstacleMovement.dx, obstacleMovement.dy);
-        });
+
+        objInserter.adjust(obstacleMovement.dx, obstacleMovement.dy);
+        //objInserter.objects.forEach(function(v, i, arr){
+        //    v.adjust(obstacleMovement.dx, obstacleMovement.dy);
+        //});
 
         // foreground
         zombieArray.forEach(function(v, i, arr){
