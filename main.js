@@ -27,7 +27,7 @@ var constants = {
     zombieHealth  :  20,
     zombieDamage  :  8,
     spawnRate     :  1/500,
-    maxZombies    :  60    
+    maxZombies    :  60
 }
 
 /*******************************************************************************
@@ -36,53 +36,60 @@ var constants = {
 
 /*-------- Player Class ------------------------------------------------------*/
 function player(){
-    this.code = 1;
+    this.code   = 1;
     this.health = constants.playerHealth;
     this.damage = constants.meleeDamage;
-    this.x = constants.canvasWidth/2;
-    this.y = constants.canvasHeight/2;
-    this.dx = 0;
-    this.dy = 0;
+    this.x      = constants.canvasWidth/2;
+    this.y      = constants.canvasHeight/2;
+    this.dx     = 0;
+    this.dy     = 0;
 }
 
 /*-------- Bullet Class ------------------------------------------------------*/
 function bullet(x, y){
-    this.code = 2;
+    this.code   = 2;
     this.health = 1;
     this.damage = constants.bulletDamage;
-    this.x = constants.canvasWidth/2;
-    this.y = constants.canvasHeight/2;
-    var xcomp = x - this.x;
-    var ycomp = y - this.y;
-    this.dx = constants.bulletSpeed*xcomp*normalize(xcomp, ycomp);
-    this.dy = constants.bulletSpeed*ycomp*normalize(xcomp, ycomp);
-    this.update = function(){
-        this.x += this.dx;
-        this.y += this.dy;
-    };
-    shotCounter = constants.fireRate;
+    this.x      = constants.canvasWidth/2;
+    this.y      = constants.canvasHeight/2;
+    var xcomp   = x - this.x;
+    var ycomp   = y - this.y;
+    this.dx     = constants.bulletSpeed*xcomp*normalize(xcomp, ycomp);
+    this.dy     = constants.bulletSpeed*ycomp*normalize(xcomp, ycomp);
+}
+
+function bulletAggregate(){
+    this.bullets = [];
+    this.shotCounter = 0;
+    this.add = function(x, y){
+        this.bullets.push(new bullet(x, y));
+    }
 }
 
 /*-------- Zombie Class ------------------------------------------------------*/
 function zombie(){
-    this.code = 3;
-    this.health = constants.zombieHealth;
-    this.damage = constants.zombieDamage;
-    this.found = false;
-    // random distance from edge, then random edge
-    var xEdgeDist = Math.random()*constants.canvasWidth/2;
-    var yEdgeDist = Math.random()*constants.canvasHeight/2;
-    this.x = Math.random()>0.5 ? xEdgeDist-constants.canvasWidth/4 : xEdgeDist+constants.canvasWidth*3/4;
-    this.y = Math.random()>0.5 ? yEdgeDist-constants.canvasHeight/4 : yEdgeDist+constants.canvasHeight*3/4;
+    var cWidth    = constants.canvasWidth; // shorter name
+    var cHeight   = constants.canvasHeight;
+    var xEdgeDist = Math.random()*cWidth/2; // random distance
+    var yEdgeDist = Math.random()*cHeight/2;
+
+    this.code     = 3;
+    this.health   = constants.zombieHealth;
+    this.damage   = constants.zombieDamage;
+    this.found    = false;
+
+    this.x  = flipCoin() ? xEdgeDist-cWidth/4 : xEdgeDist+cWidth*3/4;
+    this.y  = flipCoin() ? yEdgeDist-cHeight/4 : yEdgeDist+cHeight*3/4;
     this.dx = 0;
     this.dy = 0;
+
     this.update = function(){
-        if(this.x < constants.canvasWidth/2+constants.canvasWidth/8){
+        if(this.x < cWidth/2+cWidth/8){
             this.found = true;
         }
         if(this.found){
-            var xcomp = constants.canvasWidth/2 - this.x;
-            var ycomp = constants.canvasHeight/2 - this.y;
+            var xcomp = cWidth/2 - this.x;
+            var ycomp = cHeight/2 - this.y;
             this.dx = constants.zombieSpeed*xcomp*normalize(xcomp, ycomp);
             this.dy = constants.zombieSpeed*ycomp*normalize(xcomp, ycomp);
         }
@@ -96,10 +103,13 @@ function zombie(){
 * Functions for math 
 */
 
+// 50% chance of returning true
+function flipCoin(){
+    return Math.random()>0.5
+}
 // checks if the line drawn from p1 to q1 intersects with line drawn frm p2 to
 // q2
 function doIntersect(p1,q1,p2,q2){
-    //console.log('doIntercect called');
     function orientation(p, q, r){
         var o = (q.y-p.y)*(r.x-q.x) - (q.x-p.x)*(r.y-q.y);
         if(o == 0) return 0;
@@ -123,7 +133,6 @@ function doIntersect(p1,q1,p2,q2){
 
 // Helper with math for movement components
 function normalize(x, y){
-    //console.log('normalize called');
     return y == 0 ? 1 : Math.abs(Math.sqrt(1/(Math.pow(x/y,2)+1))/y);
 }
 
@@ -136,7 +145,6 @@ function withinGrid(corner, obj){
 /*-------- Obstacle Classes---------------------------------------------------*/
 
 function point(x, y){
-    ////console.log('point constructor called');
     this.x = x;
     this.y = y;
     this.copy = function(){
@@ -144,7 +152,6 @@ function point(x, y){
     }
 }
 function line(p, q){
-    //console.log('line constructor called');
     this.p = p;
     this.q = q;
     this.print = function(){
@@ -186,52 +193,57 @@ function obstacle(lines, corners){
     }
 }
 
-var wallLength = constants.gridSize/2;
+// returns a list of potential obstacles
+function getObstacles(){
+    var wallLength = constants.gridSize/2;
 
-var middle = new point(wallLength, wallLength);
-var topEdge = new point(wallLength, 0);
-var bottomEdge = new point(wallLength, wallLength*2);
-var leftEdge = new point(0, wallLength);
-var rightEdge = new point(wallLength*2, wallLength);
-var topMid = new point(wallLength, wallLength/2);
-var bottomMid = new point(wallLength, wallLength*3/2);
-var leftMid = new point(wallLength/2, wallLength);
-var rightMid = new point(wallLength*3/2, wallLength);
+    var middle = new point(wallLength, wallLength);
+    var topEdge = new point(wallLength, 0);
+    var bottomEdge = new point(wallLength, wallLength*2);
+    var leftEdge = new point(0, wallLength);
+    var rightEdge = new point(wallLength*2, wallLength);
+    var topMid = new point(wallLength, wallLength/2);
+    var bottomMid = new point(wallLength, wallLength*3/2);
+    var leftMid = new point(wallLength/2, wallLength);
+    var rightMid = new point(wallLength*3/2, wallLength);
 
-// lines spanning 2 wall lengths
-var lineV2 = new line(topEdge, bottomEdge);
-var lineH2 = new line(leftEdge, rightEdge);
-//  lines spanning 1 wall length
-var lineV1a = new line(topEdge, middle);
-var lineV1b = new line(middle, bottomEdge);
-var lineH1a = new line(leftEdge, middle);
-var lineH1b = new line(middle, rightEdge);
-// lines spanning half a wall length
-var lineV12a = new line(topEdge, topMid);
-var lineV12b = new line(topMid, middle);
-var lineV12c = new line(middle, bottomMid);
-var lineV12d = new line(bottomMid, bottomEdge);
-var lineH12a = new line(leftEdge, leftMid);
-var lineH12b = new line(leftMid, middle);
-var lineH12c = new line(middle, rightMid);
-var lineH12d = new line(rightMid, rightEdge);
-// lines spanning 3/2 a wall length
-var lineV32a = new line(topEdge, bottomMid);
-var lineV32b = new line(topMid, bottomEdge);
-var lineH32a = new line(leftEdge, rightMid);
-var lineH32b = new line(leftMid, rightEdge);
+    // lines spanning 2 wall lengths
+    var lineV2 = new line(topEdge, bottomEdge);
+    var lineH2 = new line(leftEdge, rightEdge);
+    //  lines spanning 1 wall length
+    var lineV1a = new line(topEdge, middle);
+    var lineV1b = new line(middle, bottomEdge);
+    var lineH1a = new line(leftEdge, middle);
+    var lineH1b = new line(middle, rightEdge);
+    // lines spanning half a wall length
+    var lineV12a = new line(topEdge, topMid);
+    var lineV12b = new line(topMid, middle);
+    var lineV12c = new line(middle, bottomMid);
+    var lineV12d = new line(bottomMid, bottomEdge);
+    var lineH12a = new line(leftEdge, leftMid);
+    var lineH12b = new line(leftMid, middle);
+    var lineH12c = new line(middle, rightMid);
+    var lineH12d = new line(rightMid, rightEdge);
+    // lines spanning 3/2 a wall length
+    var lineV32a = new line(topEdge, bottomMid);
+    var lineV32b = new line(topMid, bottomEdge);
+    var lineH32a = new line(leftEdge, rightMid);
+    var lineH32b = new line(leftMid, rightEdge);
 
-// used for reference do not alter
-var obs = [
-    new obstacle([lineV32a],[topEdge, bottomMid]),
-    new obstacle([lineV32b],[topMid, bottomEdge]),
-    new obstacle([lineH32a],[leftEdge, rightMid]),
-    new obstacle([lineH32b],[leftMid, rightEdge]),
-    new obstacle([lineV1a, lineH12b, lineH12c], [topEdge, leftMid, rightMid]),
-    new obstacle([lineV1b, lineH12b, lineH12c], [bottomEdge, leftMid, rightMid]),
-    new obstacle([lineH1a, lineV12b, lineV12c], [leftEdge, topMid, bottomMid]),
-    new obstacle([lineH1b, lineV12b, lineV12c], [rightEdge, topMid, bottomMid])
-];
+    // used for reference do not alter
+    return [
+        new obstacle([lineV32a],[topEdge, bottomMid]),
+        new obstacle([lineV32b],[topMid, bottomEdge]),
+        new obstacle([lineH32a],[leftEdge, rightMid]),
+        new obstacle([lineH32b],[leftMid, rightEdge]),
+        new obstacle([lineV1a, lineH12b, lineH12c], [topEdge, leftMid, rightMid]),
+        new obstacle([lineV1b, lineH12b, lineH12c], [bottomEdge, leftMid, rightMid]),
+        new obstacle([lineH1a, lineV12b, lineV12c], [leftEdge, topMid, bottomMid]),
+        new obstacle([lineH1b, lineV12b, lineV12c], [rightEdge, topMid, bottomMid])
+    ];
+
+}
+var obs = getObstacles();
 
 function Inserter(obsList){
     //console.log('Inserter called');
@@ -305,29 +317,78 @@ function Inserter(obsList){
     }
 }
 
-// Factory for map array
-function mapFactory(){
-    //console.log('mapFactory called');
-    var m = [];
-    for(i=0;i<constants.canvasWidth;i++){
-        var a = [];
-        for(j=0;j<constants.canvasHeight;j++){
-            a.push(0);
-        }
-        m.push(a);
-    }
-    return m;
-}
-
-
 /*******************************************************************************
 * Game object
 *     keeps track of all other objects
 */
 function game(){
-    this.p1 = new player();
-    this.update = function(){
+    this.keyMap = [false, false, false, false];
+    this.player = new player();
+    this.bullets = new bulletAggregate();
+    this.score = 0;
+    this.updater = new updater();
+    this.renderer = new renderer();
+    var g = this; // so next functions aren't confused by 'this'
+    this.arrowDown = function(e){
+        switch(e.keyCode){
+        case 87: case 38: g.keyMap[0] = true; break; //w and up
+        case 65: case 37: g.keyMap[1] = true; break; //a and left
+        case 83: case 40: g.keyMap[2] = true; break; //s and down
+        case 68: case 39: g.keyMap[3] = true; break; //d and right
+        }
+    };
+    this.arrowUp = function(e){
+        switch(e.keyCode){
+        case 87: case 38: g.keyMap[0] = false; break; //w and up
+        case 65: case 37: g.keyMap[1] = false; break; //a and left
+        case 83: case 40: g.keyMap[2] = false; break; //s and down
+        case 68: case 39: g.keyMap[3] = false; break; //d and right
+        }
+    };
+    this.mouseClick = function(e){
+        if(g.bullets.shotCounter < 1){
+            mouseX = e.pageX - g.renderer.canvas.getBoundingClientRect().left;
+            mouseY = e.pageY - g.renderer.canvas.getBoundingClientRect().top;
+            g.bullets.add(mouseX, mouseY);
+        }
+    };
+    this.test = function(){
+        g.updater.bullets(g.bullets);
+        g.renderer.bullets(g.bullets);
+    }
+}
 
+function renderer(){
+    this.canvas = document.getElementById('gameStage');
+    this.ctx = this.canvas.getContext("2d");
+    this.bg = new Image();
+    var r = this;
+    this.bg.onload = function(){
+        r.ctx.beginPath();
+        r.ctx.drawImage(r.bg,0,0); // wait for load
+        r.ctx.closePath();
+    };
+    this.bg.src = "resources/hex_bg.png";
+    this.bullets = function(b){
+        b.bullets.forEach(function(v, i, arr){
+            r.ctx.beginPath();
+            r.ctx.arc(v.x,v.y,constants.bulletSize,0,2*Math.PI);
+            r.ctx.fill();
+        });
+    }
+}
+
+function updater(){
+    this.bullets = function(b){
+        b.bullets.forEach(function(v, i, arr){
+            v.x += v.dx;
+            v.y += v.dy;
+        });
+        b.bullets = b.bullets.filter(function(v){ // clear out extra bullets
+            return v.health > 0 &&
+                   v.x > 0 && v.x < constants.canvasWidth &&
+                   v.y > 0 && v.y < constants.canvasWidth;
+        });
     }
 }
 
@@ -336,14 +397,11 @@ function game(){
 */
 
 function Main(){
-    //console.log('Main called');
     // Interface variables
     var canvas = document.getElementById('gameStage');
     var ctx = canvas.getContext("2d");
     var keyMap = [false, false, false, false]; // WASD pressed
-    var gameMap = mapFactory();
     var objList = []; // All objects
-    var bulletArray = [];
     var zombieArray = [];
     var p1 = new player();
     var worldMovement = {x:0, y:0, dx:0, dy:0};
@@ -353,61 +411,22 @@ function Main(){
     var gameLoop;
     var objInserter = new Inserter(obs);
     var obstacleMovement = {x:0, y:0, dx:0, dy:0};
+    var gameObj = new game();
     //objInserter.test();
     
     // Background image
     var bg = new Image();
     bg.onload = function(){
-        ctx.beginPath();
-        ctx.drawImage(bg,0,0); // wait for load
-        ctx.closePath();
+        //ctx.beginPath();
+        //ctx.drawImage(bg,0,0); // wait for load
+        //ctx.closePath();
     };
     bg.src = "resources/hex_bg.png";
 
     // respond to events
-    document.getElementById("doc").onkeydown = function(e){
-        switch(e.keyCode){
-        case 87: case 38: keyMap[0] = true; break; //w and up
-        case 65: case 37: keyMap[1] = true; break; //a and left
-        case 83: case 40: keyMap[2] = true; break; //s and down
-        case 68: case 39: keyMap[3] = true; break; //d and right
-        }
-    }
-    document.getElementById("doc").onkeyup = function(e){
-        switch(e.keyCode){
-        case 87: case 38: keyMap[0] = false; break; //w and up
-        case 65: case 37: keyMap[1] = false; break; //a and left
-        case 83: case 40: keyMap[2] = false; break; //s and down
-        case 68: case 39: keyMap[3] = false; break; //d and right
-        }
-    }
-    document.getElementById("doc").onclick = function(e){
-        if(shotCounter < 1){
-            mouseX = e.pageX - canvas.getBoundingClientRect().left;
-            mouseY = e.pageY - canvas.getBoundingClientRect().top;
-            bulletArray.push(new bullet(mouseX, mouseY));
-        }
-    }
-
-    // adds  objects to gameMap
-    objMap={
-        square:function(o, w){
-            for(i=o.x-Math.floor(w/2);i<o.x+floor(w/2);i++){
-                for(j=o.y-Math.floor(w/2);j<o.y+w/2;j++){
-                    gameMap[i][j] = o.code;
-                }
-            }
-        },
-        circle:function(o, r){
-            for(i=o.x-r;i<o.x+r;i++){
-                span = r * Math.asin( Math.cos( (o.x-i)/r ));
-                for(j=Math.floor(o.y-span);j<o.y+span;j++){
-                    gameMap[i][j] = o.code;
-                }
-            }
-        }
-    };
-    objMap.circle({x:7,y:10,code:1}, 3);
+    document.getElementById("doc").onkeydown = gameObj.arrowDown;
+    document.getElementById("doc").onkeyup = gameObj.arrowUp;
+    document.getElementById("doc").onclick = gameObj.mouseClick;
 
     // Update
     function update(){
@@ -419,11 +438,6 @@ function Main(){
         if(Math.random() < Math.log(gameTimer)*constants.spawnRate && zombieArray.length < constants.maxZombies)
             zombieArray.push(new zombie());
 
-        bulletArray.forEach(function(v, i, arr){
-            v.x += v.dx;
-            v.y += v.dy;
-        });
-        
         zombieArray.forEach(function(v, i, arr){
             // move
             if(v.x < constants.canvasWidth/2+constants.canvasWidth/8){
@@ -439,13 +453,13 @@ function Main(){
             v.y += v.dy + worldMovement.dy;
 
             // detect collisions
-            bulletArray.forEach(function(b, j, arr){
-                if(Math.abs(v.x-b.x)<constants.zombieSize && Math.abs(v.y-b.y)<constants.zombieSize){
-                    v.health -= b.damage;
-                    b.health -= v.damage;
-                    if(v.health < 1)
-                        score++;
-                }});
+            //bulletArray.forEach(function(b, j, arr){
+            //  if(Math.abs(v.x-b.x)<constants.zombieSize && Math.abs(v.y-b.y)<constants.zombieSize){
+            //      v.health -= b.damage;
+            //      b.health -= v.damage;
+            //      if(v.health < 1)
+            //          score++;
+            //  }});
             if(Math.abs(v.x-p1.x)<constants.zombieSize && Math.abs(v.y-p1.y)<constants.zombieSize){
                 v.health -= p1.damage;
                 p1.health -= v.damage;
@@ -463,10 +477,6 @@ function Main(){
         });
 
         // Remove objects
-        bulletArray = bulletArray.filter(function(v){ // clear out extra bullets
-            return v.health > 0 && v.x > 0 && v.x < constants.canvasWidth && v.y > 0 && v.y < constants.canvasWidth;
-        });
-
         zombieArray = zombieArray.filter(function(v){
             return v.health > 0 && v.x > -constants.canvasWidth && v.x < 2*constants.canvasWidth
                 && v.y > -constants.canvasHeight && v.y <2* constants.canvasWidth;
@@ -484,8 +494,8 @@ function Main(){
         // This stuff should be moved to update
         ctx.clearRect(0,0,constants.canvasWidth,constants.canvasHeight);
         // Background: detirmines direction, adjusts speed, and loops when at edge of map
-        var raw_x = (keyMap[1]?1:0) + (keyMap[3]?-1:0);
-        var raw_y = (keyMap[0]?1:0) + (keyMap[2]?-1:0);
+        var raw_x = (gameObj.keyMap[1]?1:0) + (gameObj.keyMap[3]?-1:0);
+        var raw_y = (gameObj.keyMap[0]?1:0) + (gameObj.keyMap[2]?-1:0);
         worldMovement.dx = constants.playerSpeed*raw_x*normalize(raw_x, raw_y);
         worldMovement.dy = constants.playerSpeed*raw_y*normalize(raw_x, raw_y);
         worldMovement.x += worldMovement.dx;
@@ -539,11 +549,7 @@ function Main(){
             ctx.fill();
             ctx.fillStyle = '#000000';
         });
-        bulletArray.forEach(function(v, i, arr){
-            ctx.beginPath();
-            ctx.arc(v.x,v.y,constants.bulletSize,0,2*Math.PI);
-            ctx.fill();
-        });
+        gameObj.test();
         objInserter.getLines().forEach(function(v, i, arr){
             ctx.beginPath();
             ctx.moveTo(v.p.x, v.p.y);
