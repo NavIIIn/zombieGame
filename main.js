@@ -251,31 +251,32 @@ function Inserter(obsList){
         // wall (l, r, t, b) indicates which wall
         var rand;
         if(wall == 'l'){
-            for(var i=0; i<CANVAS_HEIGHT/2/WALL_LENGTH; i++){
+            for(var i=0; i<this.obsMap.length; i++){
                 rand = Math.floor(Math.random()*(this.types.length));
-                this.obsMap[i/2*WALL_LENGTH].unshift(this.types[rand].copy().adjust(-WALL_LENGTH*2, i*WALL_LENGTH*2));
+                this.obsMap[i].unshift(this.types[rand].copy().adjust(-WALL_LENGTH*2, i*WALL_LENGTH*2));
             }
         }
         else if(wall == 'r'){
-            for(var i=0; i<CANVAS_HEIGHT; i+= 2*WALL_LENGTH){
+            for(var i=0; i<this.obsMap.length; i++){
                 rand = Math.floor(Math.random()*(this.types.length));
-                this.obsMap[i/2*WALL_LENGTH].push(this.types[rand].copy().adjust(CANVAS_WIDTH, i*WALL_LENGTH*2));
+                this.obsMap[i].push(this.types[rand].copy().adjust(CANVAS_WIDTH, i*WALL_LENGTH*2));
             }
         }
         else if(wall == 't'){
-            var wall = [];
+            var newWall = [];
             for(var i=0; i<CANVAS_WIDTH; i += 2*WALL_LENGTH){
                 rand = Math.floor(Math.random()*(this.types.length));
-                wall.push(this.types[rand].copy().adjust(i, -2*WALL_LENGTH));
-                this.obsMap.unshift(wall);
+                newWall.push(this.types[rand].copy().adjust(i, -2*WALL_LENGTH));
             }
+            this.obsMap.unshift(newWall);
         }
         else if(wall == 'b'){
+            var newWall = [];
             for(var i=0; i<CANVAS_WIDTH; i += 2*WALL_LENGTH){
                 rand = Math.floor(Math.random()*(this.types.length));
-                wall.push(this.types[rand].copy().adjust(i, CANVAS_HEIGHT));
-                this.obsMap.push(wall);
+                newWall.push(this.types[rand].copy().adjust(i, CANVAS_HEIGHT));
             }
+            this.obsMap.push(newWall);
         }
         else {console.log('incorrect input in addNewWall');}
 
@@ -311,14 +312,6 @@ function Inserter(obsList){
             this.obsMap[i].push(this.types[rand].copy().adjust(j*WALL_LENGTH*2, i*WALL_LENGTH*2));
         }
     }
-    //for(var i = 0; i < CANVAS_HEIGHT; i += 2*WALL_LENGTH){
-        //for(var j = 0; j < CANVAS_WIDTH; j+= 2*WALL_LENGTH){
-            //if(!withinGrid(i, CENTER_Y) ||
-               //!withinGrid(j, CENTER_X)){
-                //this.addNew(j,i);
-            //}
-        //}
-    //}
 }
 
 // Factory for map array
