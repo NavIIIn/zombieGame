@@ -1,7 +1,10 @@
 /*******************************************************************************
-* Zombie Game                                                                  *
-* Joseph Navin                                                                 *
-* June 2016                                                                    *
+*                          _   __            _                                 *
+* Zombie Game             / | / /___ __   __(_)___                             *
+* Joseph Navin           /  |/ / __ `/ | / / / __ \                            *
+* July 2016             / /|  / /_/ /| |/ / / / / /                            *
+*                      /_/ |_/\__,_/ |___/_/_/ /_/                             *
+*                                                                              *
 *******************************************************************************/
 
 /*******************************************************************************
@@ -98,6 +101,13 @@ function zombie(){
     };
 }
 
+function zombieAggregate(){
+    this.array = [];
+    this.hash = []; // stores by approximate loaction
+    this.add = function(){
+
+    }
+}
 
 /*******************************************************************************
 * Functions for math 
@@ -105,7 +115,7 @@ function zombie(){
 
 // 50% chance of returning true
 function flipCoin(){
-    return Math.random()>0.5
+    return Math.random()>0.5;
 }
 // checks if the line drawn from p1 to q1 intersects with line drawn frm p2 to
 // q2
@@ -140,6 +150,14 @@ function normalize(x, y){
 // direction
 function withinGrid(corner, obj){
     return obj - corner > 0 && obj - corner < constants.gridSize;
+}
+
+function withinRadius(x1, y1, x2, y2, r){
+    return Math.sqrt(Math.pow(x1-x2,2)+Math.pow(y1-y2,2)) < r;
+}
+
+function div(n){
+    return Math.round(n/(constants.zombieSize + constants.bulletSize)/2);
 }
 
 /*-------- Obstacle Classes---------------------------------------------------*/
@@ -379,6 +397,7 @@ function renderer(){
 }
 
 function updater(){
+    this.allObj = [];
     this.bullets = function(b){
         b.bullets.forEach(function(v, i, arr){
             v.x += v.dx;
@@ -390,6 +409,53 @@ function updater(){
                    v.y > 0 && v.y < constants.canvasWidth;
         });
     }
+    this.update = function(z, b){
+        var pts = [];
+        function addToPts(x,y,v){
+            if(typeof pts[x] == 'undefined'){
+                pts[x] = [];
+                pts[x][y] = [v];
+            }
+            else if(typeof pts[x][y] == 'undefined')
+                pts[x][y] = [v];
+            else
+                pts[x][y] = pts[x][y].push(v);
+        }
+        function zombieCollide(i){
+            var xDown = div(z[i].x);
+            var yDown = div(z[i].y);
+            addToPts(xDown, yDown, i);
+            addToPts(xDown-1, yDown, i);
+            addToPts(xDown, yDown-1, i);
+            addToPts(xDown+1, yDown, i);
+            addToPts(xDown, yDown+1, i);
+        }
+        function bulletCollide(i){
+            var xDown = div(b[i].x);
+            var yDown = div(b[i].y);
+            if(typeof pts[xDown] != 'undefined' && typeof pts[xDown][yDown] != 'undefined'){
+                pts[xDown][yDown].forEach(function(v, index, arr){
+                    var bull = b[i];
+                    var zomb = z[v];
+                    var rad = constants.zombieSize + constants.bulletSize;
+                    if(withinRadius(zomb.x, zomb.y, bull.x, bull.y, rad)){
+                        zomb.health -= constants.bulletDamage;
+                        bull.health -= constants.zombieDamage;
+                        if(bull.health  < 0)
+                            b = b.slice(0, i).concat(b.slice(i+1, b.length));
+                    }
+                });
+            }
+        }
+        if(z.length > 0 && b.length > 0){
+            for(var i = 0; i < z.length; i++){
+                zombieCollide(i);
+            }
+            for(var i = 0; i < b.length; i++){
+                bulletCollide(i);
+            }
+        }
+    };
 }
 
 /*******************************************************************************
@@ -438,6 +504,7 @@ function Main(){
         if(Math.random() < Math.log(gameTimer)*constants.spawnRate && zombieArray.length < constants.maxZombies)
             zombieArray.push(new zombie());
 
+        gameObj.updater.update(zombieArray, gameObj.bullets.bullets);
         zombieArray.forEach(function(v, i, arr){
             // move
             if(v.x < constants.canvasWidth/2+constants.canvasWidth/8){
@@ -490,7 +557,6 @@ function Main(){
     }
 
     function render(){
-        //console.log('render called');
         // This stuff should be moved to update
         ctx.clearRect(0,0,constants.canvasWidth,constants.canvasHeight);
         // Background: detirmines direction, adjusts speed, and loops when at edge of map
@@ -518,22 +584,18 @@ function Main(){
         if (obstacleMovement.x > 0){
             obstacleMovement.x -= constants.gridSize;
             objInserter.addNewWall('l');
-            console.log('add wall left');
         }
         if (obstacleMovement.x < -constants.gridSize){
             obstacleMovement.x += constants.gridSize;
             objInserter.addNewWall('r');
-            console.log('add wall right');
         }
         if (obstacleMovement.y > 0){
             obstacleMovement.y -= constants.gridSize;
             objInserter.addNewWall('t');
-            console.log('add wall top');
         }
         if (obstacleMovement.y < -constants.gridSize){
             obstacleMovement.y += constants.gridSize;
             objInserter.addNewWall('b');
-            console.log('add wall bottom');
         }
 
         objInserter.adjust(obstacleMovement.dx, obstacleMovement.dy);
