@@ -70,6 +70,62 @@ function bulletAggregate(){
 }
 
 /*-------- Zombie Class ------------------------------------------------------*/
+function hash(){
+    this.values = [];
+    this.addGrid = function(x,y,o){
+        if(typeof this.values[x] == 'undefined'){
+            this.values[x] = [];
+            this.values[x][y] = [o];
+        }
+        else if(typeof this.values[x][y] == 'undefined')
+            this.values[x][y] = [o];
+        else{
+            this.values[x][y].push(o);
+        }
+    }   
+    this.add = function(o){
+        var x = div(o.x);
+        var y = div(o.y);
+        this.addGrid(x, y, o);
+        this.addGrid(x-1, y, o);
+        this.addGrid(x+1, y, o);
+        this.addGrid(x, y-1, o);
+        this.addGrid(x, y+1, o);
+    }
+    this.addAll = function(arr){
+        this.values = [];
+        if(arr.length > 0)
+            for(var i = 0; i < arr.length; i++)
+                this.add(arr[i]);
+    }
+    this.collidesWith = function(o){
+        var x = div(o.x);
+        var y = div(o.y);
+        if(typeof this.values[x] != 'undefined' && typeof this.values[x][y] != 'undefined')
+            return this.values[x][y].slice();
+        else
+            return [];
+    }
+    this.collideAll = function(arr, fun){
+        if(arr.length > 0)
+            for(var i = 0; i < arr.length; i++)
+                fun(arr[i], this.collidesWith(arr[i]));
+    }
+    this.test = function(){
+        function print(o, arr){
+            console.log(o);
+            console.log(arr);
+        }
+        this.addAll([
+            {x: 16, y: 16},
+            {x:300, y: 300},
+            {x: 15, y:15}
+        ]);
+        this.collideAll([
+            {x: 12, y: 12}
+        ], print);
+    }
+}
 function zombie(){
     var cWidth    = constants.canvasWidth; // shorter name
     var cHeight   = constants.canvasHeight;
@@ -153,6 +209,8 @@ function withinGrid(corner, obj){
 }
 
 function withinRadius(x1, y1, x2, y2, r){
+    console.log(Math.sqrt(Math.pow(x1-x2,2)+Math.pow(y1-y2,2)));
+    console.log(r);
     return Math.sqrt(Math.pow(x1-x2,2)+Math.pow(y1-y2,2)) < r;
 }
 
@@ -343,6 +401,7 @@ function game(){
     this.keyMap = [false, false, false, false];
     this.player = new player();
     this.bullets = new bulletAggregate();
+    this.zombies = new zombieAggregate();
     this.score = 0;
     this.updater = new updater();
     this.renderer = new renderer();
@@ -370,10 +429,7 @@ function game(){
             g.bullets.add(mouseX, mouseY);
         }
     };
-    this.test = function(){
-        g.updater.bullets(g.bullets);
-        g.renderer.bullets(g.bullets);
-    }
+    updater.update();
 }
 
 function renderer(){
@@ -397,8 +453,20 @@ function renderer(){
 }
 
 function updater(){
-    this.allObj = [];
+    var zombieHash = new hash();
+    this.zombies = function(z){
+        zombieHash.addAll(z);
+    }
     this.bullets = function(b){
+        zombieHash.collideAll(b, function(b, arr){
+            var rad = constants.zombieSize + constants.bulletSize;
+            arr.forEach(function(z, index, arr){
+                if(withinRadius(z.x, z.y, b.x, b.y, rad)){
+                    z.health -= constants.bulletDamage;
+                    b.health -= constants.zombieDamage;
+                }
+            });
+        });
         b.bullets.forEach(function(v, i, arr){
             v.x += v.dx;
             v.y += v.dy;
@@ -410,51 +478,8 @@ function updater(){
         });
     }
     this.update = function(z, b){
-        var pts = [];
-        function addToPts(x,y,v){
-            if(typeof pts[x] == 'undefined'){
-                pts[x] = [];
-                pts[x][y] = [v];
-            }
-            else if(typeof pts[x][y] == 'undefined')
-                pts[x][y] = [v];
-            else
-                pts[x][y] = pts[x][y].push(v);
-        }
-        function zombieCollide(i){
-            var xDown = div(z[i].x);
-            var yDown = div(z[i].y);
-            addToPts(xDown, yDown, i);
-            addToPts(xDown-1, yDown, i);
-            addToPts(xDown, yDown-1, i);
-            addToPts(xDown+1, yDown, i);
-            addToPts(xDown, yDown+1, i);
-        }
-        function bulletCollide(i){
-            var xDown = div(b[i].x);
-            var yDown = div(b[i].y);
-            if(typeof pts[xDown] != 'undefined' && typeof pts[xDown][yDown] != 'undefined'){
-                pts[xDown][yDown].forEach(function(v, index, arr){
-                    var bull = b[i];
-                    var zomb = z[v];
-                    var rad = constants.zombieSize + constants.bulletSize;
-                    if(withinRadius(zomb.x, zomb.y, bull.x, bull.y, rad)){
-                        zomb.health -= constants.bulletDamage;
-                        bull.health -= constants.zombieDamage;
-                        if(bull.health  < 0)
-                            b = b.slice(0, i).concat(b.slice(i+1, b.length));
-                    }
-                });
-            }
-        }
-        if(z.length > 0 && b.length > 0){
-            for(var i = 0; i < z.length; i++){
-                zombieCollide(i);
-            }
-            for(var i = 0; i < b.length; i++){
-                bulletCollide(i);
-            }
-        }
+        this.zombies(z);
+        this.bullets(b);
     };
 }
 
