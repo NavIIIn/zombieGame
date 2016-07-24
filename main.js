@@ -61,14 +61,6 @@ function bullet(x, y){
     this.dy     = constants.bulletSpeed*ycomp*normalize(xcomp, ycomp);
 }
 
-function bulletAggregate(){
-    this.bullets = [];
-    this.shotCounter = 0;
-    this.add = function(x, y){
-        this.bullets.push(new bullet(x, y));
-    }
-}
-
 /*-------- Zombie Class ------------------------------------------------------*/
 function hash(){
     this.values = [];
@@ -157,14 +149,6 @@ function zombie(){
     };
 }
 
-function zombieAggregate(){
-    this.array = [];
-    this.hash = []; // stores by approximate loaction
-    this.add = function(){
-
-    }
-}
-
 /*******************************************************************************
 * Functions for math 
 */
@@ -209,8 +193,6 @@ function withinGrid(corner, obj){
 }
 
 function withinRadius(x1, y1, x2, y2, r){
-    console.log(Math.sqrt(Math.pow(x1-x2,2)+Math.pow(y1-y2,2)));
-    console.log(r);
     return Math.sqrt(Math.pow(x1-x2,2)+Math.pow(y1-y2,2)) < r;
 }
 
@@ -398,38 +380,50 @@ function Inserter(obsList){
 *     keeps track of all other objects
 */
 function game(){
-    this.keyMap = [false, false, false, false];
-    this.player = new player();
-    this.bullets = new bulletAggregate();
-    this.zombies = new zombieAggregate();
-    this.score = 0;
+    var objs = {
+        keyMap: [false, false, false, false],
+        player: new player(),
+        bullets: [],
+        zombies: [],
+        worldMovement: {x:0, y:0, dx:0, dy:0},
+        objInserter: new Inserter(obs),
+        obstacleMovement: {x:0, y:0, dx:0, dy:0},
+        shotCounter: 0,
+        score: 0
+    }
+    this.test = 0;
     this.updater = new updater();
     this.renderer = new renderer();
     var g = this; // so next functions aren't confused by 'this'
     this.arrowDown = function(e){
         switch(e.keyCode){
-        case 87: case 38: g.keyMap[0] = true; break; //w and up
-        case 65: case 37: g.keyMap[1] = true; break; //a and left
-        case 83: case 40: g.keyMap[2] = true; break; //s and down
-        case 68: case 39: g.keyMap[3] = true; break; //d and right
+        case 87: case 38: objs.keyMap[0] = true; break; //w and up
+        case 65: case 37: objs.keyMap[1] = true; break; //a and left
+        case 83: case 40: objs.keyMap[2] = true; break; //s and down
+        case 68: case 39: objs.keyMap[3] = true; break; //d and right
         }
     };
     this.arrowUp = function(e){
         switch(e.keyCode){
-        case 87: case 38: g.keyMap[0] = false; break; //w and up
-        case 65: case 37: g.keyMap[1] = false; break; //a and left
-        case 83: case 40: g.keyMap[2] = false; break; //s and down
-        case 68: case 39: g.keyMap[3] = false; break; //d and right
+        case 87: case 38: objs.keyMap[0] = false; break; //w and up
+        case 65: case 37: objs.keyMap[1] = false; break; //a and left
+        case 83: case 40: objs.keyMap[2] = false; break; //s and down
+        case 68: case 39: objs.keyMap[3] = false; break; //d and right
         }
     };
     this.mouseClick = function(e){
-        if(g.bullets.shotCounter < 1){
+        if(objs.shotCounter < 1){
             mouseX = e.pageX - g.renderer.canvas.getBoundingClientRect().left;
             mouseY = e.pageY - g.renderer.canvas.getBoundingClientRect().top;
-            g.bullets.add(mouseX, mouseY);
+            objs.bullets.push(new bullet(mouseX, mouseY));
         }
     };
-    updater.update();
+    this.update = function(){
+        return this.updater.update(objs);
+    };
+    this.render = function(){
+        this.renderer.render(objs);
+    };
 }
 
 function renderer(){
@@ -437,156 +431,87 @@ function renderer(){
     this.ctx = this.canvas.getContext("2d");
     this.bg = new Image();
     var r = this;
-    this.bg.onload = function(){
-        r.ctx.beginPath();
-        r.ctx.drawImage(r.bg,0,0); // wait for load
-        r.ctx.closePath();
-    };
     this.bg.src = "resources/hex_bg.png";
+    this.player = function(p){
+        this.ctx.beginPath();
+        this.ctx.arc(p.x,p.y,constants.playerSize,0,2*Math.PI);
+        this.ctx.fill();
+    }
     this.bullets = function(b){
-        b.bullets.forEach(function(v, i, arr){
+        b.forEach(function(v, i, arr){
             r.ctx.beginPath();
             r.ctx.arc(v.x,v.y,constants.bulletSize,0,2*Math.PI);
             r.ctx.fill();
         });
     }
+    this.zombies = function(z){
+        z.forEach(function(v, i, arr){
+            r.ctx.beginPath();
+            r.ctx.arc(v.x,v.y,constants.zombieSize,0,2*Math.PI);
+            r.ctx.fillStyle = '#105F10';
+            r.ctx.fill();
+            r.ctx.fillStyle = '#000000';
+        });
+    }
+    this.world = function(worldMovement){
+        this.ctx.beginPath();
+        this.ctx.drawImage(this.bg,worldMovement.x,worldMovement.y);
+        this.ctx.closePath();
+    }
+    this.obstacles = function(obstaclemovement, objinserter){
+        objinserter.getLines().forEach(function(v, i, arr){
+            r.ctx.beginPath();
+            r.ctx.moveTo(v.p.x, v.p.y);
+            r.ctx.lineTo(v.q.x, v.q.y);
+            r.ctx.stroke();
+        });
+    }
+    this.render = function(objs){
+        this.ctx.clearRect(0,0,constants.canvasWidth,constants.canvasHeight);
+        this.world(objs.worldMovement);
+        this.zombies(objs.zombies);
+        this.bullets(objs.bullets);
+        this.player(objs.player);
+        this.obstacles(objs.obstacleMovement, objs.objInserter)
+    }
 }
 
 function updater(){
+    var gameTimer = 0;
     var zombieHash = new hash();
-    this.zombies = function(z){
-        zombieHash.addAll(z);
+    var killed = 0;
+    function updateZombie(z, worldMovement){
+        // move
+        if(z.x < constants.canvasWidth/2+constants.canvasWidth/8){
+            z.found = true;
+        }
+        if(z.found){
+            var xcomp = constants.canvasWidth/2 - z.x;
+            var ycomp = constants.canvasHeight/2 - z.y;
+            z.dx = constants.zombieSpeed*xcomp*normalize(xcomp, ycomp);
+            z.dy = constants.zombieSpeed*ycomp*normalize(xcomp, ycomp);
+        }
+        z.x += z.dx + worldMovement.dx;
+        z.y += z.dy + worldMovement.dy;
+
+        if(z.health <= 0)
+            score++;
     }
-    this.bullets = function(b){
-        zombieHash.collideAll(b, function(b, arr){
+    this.player = function(p){
+        zombieHash.collideAll([p], function(p, arr){
             var rad = constants.zombieSize + constants.bulletSize;
             arr.forEach(function(z, index, arr){
-                if(withinRadius(z.x, z.y, b.x, b.y, rad)){
-                    z.health -= constants.bulletDamage;
-                    b.health -= constants.zombieDamage;
+                if(withinRadius(z.x, z.y, p.x, p.y, rad)){
+                    z.health -= p.damage;
+                    p.health -= z.damage;
                 }
             });
         });
-        b.bullets.forEach(function(v, i, arr){
-            v.x += v.dx;
-            v.y += v.dy;
-        });
-        b.bullets = b.bullets.filter(function(v){ // clear out extra bullets
-            return v.health > 0 &&
-                   v.x > 0 && v.x < constants.canvasWidth &&
-                   v.y > 0 && v.y < constants.canvasWidth;
-        });
-    }
-    this.update = function(z, b){
-        this.zombies(z);
-        this.bullets(b);
+        return p;
     };
-}
-
-/*******************************************************************************
-* Main Function
-*/
-
-function Main(){
-    // Interface variables
-    var canvas = document.getElementById('gameStage');
-    var ctx = canvas.getContext("2d");
-    var keyMap = [false, false, false, false]; // WASD pressed
-    var objList = []; // All objects
-    var zombieArray = [];
-    var p1 = new player();
-    var worldMovement = {x:0, y:0, dx:0, dy:0};
-    var shotCounter = 0;
-    var gameTimer = 0;
-    var score = 0;
-    var gameLoop;
-    var objInserter = new Inserter(obs);
-    var obstacleMovement = {x:0, y:0, dx:0, dy:0};
-    var gameObj = new game();
-    //objInserter.test();
-    
-    // Background image
-    var bg = new Image();
-    bg.onload = function(){
-        //ctx.beginPath();
-        //ctx.drawImage(bg,0,0); // wait for load
-        //ctx.closePath();
-    };
-    bg.src = "resources/hex_bg.png";
-
-    // respond to events
-    document.getElementById("doc").onkeydown = gameObj.arrowDown;
-    document.getElementById("doc").onkeyup = gameObj.arrowUp;
-    document.getElementById("doc").onclick = gameObj.mouseClick;
-
-    // Update
-    function update(){
-        // Display
-        document.getElementById("score").innerHTML = "Score: " + score;
-        document.getElementById("health").innerHTML = "Health: " + p1.health;
-
-        // Game objects
-        if(Math.random() < Math.log(gameTimer)*constants.spawnRate && zombieArray.length < constants.maxZombies)
-            zombieArray.push(new zombie());
-
-        gameObj.updater.update(zombieArray, gameObj.bullets.bullets);
-        zombieArray.forEach(function(v, i, arr){
-            // move
-            if(v.x < constants.canvasWidth/2+constants.canvasWidth/8){
-                v.found = true;
-            }
-            if(v.found){
-                var xcomp = constants.canvasWidth/2 - v.x;
-                var ycomp = constants.canvasHeight/2 - v.y;
-                v.dx = constants.zombieSpeed*xcomp*normalize(xcomp, ycomp);
-                v.dy = constants.zombieSpeed*ycomp*normalize(xcomp, ycomp);
-            }
-            v.x += v.dx + worldMovement.dx;
-            v.y += v.dy + worldMovement.dy;
-
-            // detect collisions
-            //bulletArray.forEach(function(b, j, arr){
-            //  if(Math.abs(v.x-b.x)<constants.zombieSize && Math.abs(v.y-b.y)<constants.zombieSize){
-            //      v.health -= b.damage;
-            //      b.health -= v.damage;
-            //      if(v.health < 1)
-            //          score++;
-            //  }});
-            if(Math.abs(v.x-p1.x)<constants.zombieSize && Math.abs(v.y-p1.y)<constants.zombieSize){
-                v.health -= p1.damage;
-                p1.health -= v.damage;
-                if(v.health < 1)
-                    score++;
-            }
-            zombieArray.forEach(function(v2, i2, arr){
-                if(Math.abs(v.x-v2.x)<constants.zombieSize*2 && Math.abs(v2.y-v.y)<constants.zombieSize*2 && i != i2){
-                    // undo movement
-                    v.x -= v.dx + worldMovement.dx;
-                    v.y -= v.dy + worldMovement.dy;
-                }
-            });
-
-        });
-
-        // Remove objects
-        zombieArray = zombieArray.filter(function(v){
-            return v.health > 0 && v.x > -constants.canvasWidth && v.x < 2*constants.canvasWidth
-                && v.y > -constants.canvasHeight && v.y <2* constants.canvasWidth;
-        });
-
-        if(p1.health < 1){
-            zombieArray = [];
-            clearInterval(gameLoop);
-            Main();
-        }
-    }
-
-    function render(){
-        // This stuff should be moved to update
-        ctx.clearRect(0,0,constants.canvasWidth,constants.canvasHeight);
-        // Background: detirmines direction, adjusts speed, and loops when at edge of map
-        var raw_x = (gameObj.keyMap[1]?1:0) + (gameObj.keyMap[3]?-1:0);
-        var raw_y = (gameObj.keyMap[0]?1:0) + (gameObj.keyMap[2]?-1:0);
+    this.world = function(worldMovement, keyMap){
+        var raw_x = (keyMap[1]?1:0) + (keyMap[3]?-1:0);
+        var raw_y = (keyMap[0]?1:0) + (keyMap[2]?-1:0);
         worldMovement.dx = constants.playerSpeed*raw_x*normalize(raw_x, raw_y);
         worldMovement.dy = constants.playerSpeed*raw_y*normalize(raw_x, raw_y);
         worldMovement.x += worldMovement.dx;
@@ -599,67 +524,116 @@ function Main(){
             worldMovement.y -= constants.hexGrid;
         if (worldMovement.y < -constants.hexGrid)
             worldMovement.y += constants.hexGrid;
-        ctx.beginPath();
-        ctx.drawImage(bg,worldMovement.x,worldMovement.y);
 
-        obstacleMovement.dx = constants.playerSpeed*raw_x*normalize(raw_x, raw_y);
-        obstacleMovement.dy = constants.playerSpeed*raw_y*normalize(raw_x, raw_y);
-        obstacleMovement.x += obstacleMovement.dx;
-        obstacleMovement.y += obstacleMovement.dy;
-        if (obstacleMovement.x > 0){
-            obstacleMovement.x -= constants.gridSize;
-            objInserter.addNewWall('l');
+    };
+    this.obstacles = function(obstaclemovement, objinserter, keyMap){
+        var raw_x = (keyMap[1]?1:0) + (keyMap[3]?-1:0);
+        var raw_y = (keyMap[0]?1:0) + (keyMap[2]?-1:0);
+        obstaclemovement.dx = constants.playerspeed*raw_x*normalize(raw_x, raw_y);
+        obstaclemovement.dy = constants.playerspeed*raw_y*normalize(raw_x, raw_y);
+        obstaclemovement.x += obstaclemovement.dx;
+        obstaclemovement.y += obstaclemovement.dy;
+        if (obstaclemovement.x > 0){
+            obstaclemovement.x -= constants.gridsize;
+            objinserter.addnewwall('l');
         }
-        if (obstacleMovement.x < -constants.gridSize){
-            obstacleMovement.x += constants.gridSize;
-            objInserter.addNewWall('r');
+        if (obstaclemovement.x < -constants.gridsize){
+            obstaclemovement.x += constants.gridsize;
+            objinserter.addnewwall('r');
         }
-        if (obstacleMovement.y > 0){
-            obstacleMovement.y -= constants.gridSize;
-            objInserter.addNewWall('t');
+        if (obstaclemovement.y > 0){
+            obstaclemovement.y -= constants.gridsize;
+            objinserter.addnewwall('t');
         }
-        if (obstacleMovement.y < -constants.gridSize){
-            obstacleMovement.y += constants.gridSize;
-            objInserter.addNewWall('b');
+        if (obstaclemovement.y < -constants.gridsize){
+            obstaclemovement.y += constants.gridsize;
+            objinserter.addnewwall('b');
         }
 
-        objInserter.adjust(obstacleMovement.dx, obstacleMovement.dy);
-        //objInserter.objects.forEach(function(v, i, arr){
-        //    v.adjust(obstacleMovement.dx, obstacleMovement.dy);
-        //});
-
-        // foreground
-        zombieArray.forEach(function(v, i, arr){
-            ctx.beginPath();
-            ctx.arc(v.x,v.y,constants.zombieSize,0,2*Math.PI);
-            ctx.fillStyle = '#105F10';
-            ctx.fill();
-            ctx.fillStyle = '#000000';
-        });
-        gameObj.test();
-        objInserter.getLines().forEach(function(v, i, arr){
-            ctx.beginPath();
-            ctx.moveTo(v.p.x, v.p.y);
-            ctx.lineTo(v.q.x, v.q.y);
-            ctx.stroke();
-        });
-        ctx.beginPath();
-        ctx.arc(p1.x,p1.y,constants.playerSize,0,2*Math.PI);
-        ctx.fill();
+        objinserter.adjust(obstaclemovement.dx, obstaclemovement.dy);
+        
     }
+    this.zombies = function(z, worldMovement){
+        killed = 0;
+        zombieHash.addAll(z);
+        if(Math.random() < Math.log(gameTimer)*constants.spawnRate && z.length < constants.maxZombies)
+            z.push(new zombie());
+        z.forEach(function(v,i,arr){
+            updateZombie(v, worldMovement);
+            if(v.health <= 0)
+                killed++;
+        });
+        return z.filter(function(v){
+            return v.health > 0 && v.x > -constants.canvasWidth && v.x < 2*constants.canvasWidth
+                && v.y > -constants.canvasHeight && v.y <2* constants.canvasWidth;
+        });
+    };
+    this.bullets = function(b){
+        zombieHash.collideAll(b, function(b, arr){
+            var rad = constants.zombieSize + constants.bulletSize;
+            arr.forEach(function(z, index, arr){
+                if(withinRadius(z.x, z.y, b.x, b.y, rad)){
+                    z.health -= b.damage;
+                    b.health -= z.damage;
+                }
+            });
+        });
+        b.forEach(function(v, i, arr){
+            v.x += v.dx;
+            v.y += v.dy;
+        });
+        return b.filter(function(v){ // clear out extra bullets
+            return v.health > 0 &&
+                   v.x > 0 && v.x < constants.canvasWidth &&
+                   v.y > 0 && v.y < constants.canvasWidth;
+        });
+    };
+    this.update = function(objs){
+        document.getElementById("score").innerHTML = "Score: " + objs.score;
+        document.getElementById("health").innerHTML = "Health: " + objs.player.health;
+        objs.zombies = this.zombies(objs.zombies, objs.worldMovement);
+        objs.bullets = this.bullets(objs.bullets);
+        objs.player = this.player(objs.player);
+        this.world(objs.worldMovement, objs.keyMap);
+        this.obstacles(objs.obstacleMovement, objs.objInserter, objs.keyMap);
+        gameTimer++;
+        objs.shotCounter--;
+        objs.score += killed;
+
+        if(objs.player.health <= 0)
+            return false;
+        else
+            return true;
+    };
+}
+
+/*******************************************************************************
+* Main Function
+*/
+
+function Main(){
+    // Interface variables
+    var gameLoop;
+    var gameObj = new game();
+
+    // respond to events
+    document.getElementById("doc").onkeydown = gameObj.arrowDown;
+    document.getElementById("doc").onkeyup = gameObj.arrowUp;
+    document.getElementById("doc").onclick = gameObj.mouseClick;
+
     
     // primary game loop
-    function mainLoop(){
-        shotCounter--;
-        gameTimer++;
-
-        update();
-        render();
+    function mainloop(){
+        if(!gameObj.update()){
+            clearInterval(gameLoop);
+            Main();
+        }
+        gameObj.render();
     }
 
     // run game
     document.getElementById("start").onclick = function(){
         clearInterval(gameLoop);
-        gameLoop=setInterval(mainLoop, constants.frameTime);
+        gameLoop = setInterval(mainloop, constants.frameTime);
     }
 }
