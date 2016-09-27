@@ -213,6 +213,8 @@ function line(p, q){
 function obstacle(lines, corners){
     this.corners = corners; // edges that can be walked around
     this.lines = lines;
+    this.x = 0;
+    this.y = 0;
     this.adjust = function(x, y){
         for(var i = 0; i < lines.length; i++){
             this.lines[i].p.x += x;
@@ -224,6 +226,8 @@ function obstacle(lines, corners){
             corners[i].x += x;
             corners[i].y += y;
         }
+        this.x +=x;
+        this.y +=y;
         return this;
     }
     this.copy = function(){
@@ -291,43 +295,55 @@ function getObstacles(){
 }
 var obs = getObstacles();
 
+
 function Inserter(obsList){
     this.types = obsList;
     this.obsMap = [];
-    this.addNewWall = function(wall){
-        // wall (l, r, t, b) indicates which wall
-        var rand;
-        var gSize = constants.gridSize;
-        if(wall == 'l'){
-            for(var i=0; i<this.obsMap.length; i++){
-                rand = Math.floor(Math.random()*(this.types.length));
-                this.obsMap[i].unshift(this.types[rand].copy().adjust(-gSize, i*gSize));
-            }
+    this.getRandomObs = function(){
+        var rand = Math.floor(Math.random()*this.types.length);
+        return this.types[rand].copy();
+    }
+    this.addLeft = function(){
+        var adjX = this.obsMap[0][0].x - constants.gridSize;
+        var adjY = this.obsMap[0][0].y;
+        for(var i = 0; i < this.obsMap.length; i++){
+            this.obsMap[i].unshift(this.getRandomObs().adjust(adjX, adjY));
+            this.obsMap[i].pop();
+            adjY += constants.gridSize;
         }
-        else if(wall == 'r'){
-            for(var i=0; i<this.obsMap.length; i++){
-                rand = Math.floor(Math.random()*(this.types.length));
-                this.obsMap[i].push(this.types[rand].copy().adjust(constants.canvasWidth, i*gSize));
-            }
+    }
+    this.addRight = function(){
+        var xlen = this.obsMap[0].length;
+        var adjX = this.obsMap[0][xlen-1].x + constants.gridSize;
+        var adjY = this.obsMap[0][xlen-1].y;
+        for(var i = 0; i < this.obsMap.length; i++){
+            this.obsMap[i].push(this.getRandomObs().adjust(adjX, adjY));
+            this.obsMap[i].shift();
+            adjY += constants.gridSize;
         }
-        else if(wall == 't'){
-            var newWall = [];
-            for(var i=0; i<constants.canvasWidth; i += gSize){
-                rand = Math.floor(Math.random()*(this.types.length));
-                newWall.push(this.types[rand].copy().adjust(i, -gSize));
-            }
-            this.obsMap.unshift(newWall);
+    }
+    this.addTop = function(){
+        var adjX = this.obsMap[0][0].x;
+        var adjY = this.obsMap[0][0].y - constants.gridSize;
+        var newWall = [];
+        for(var i = 0; i < this.obsMap[0].length; i++){
+            newWall.push(this.getRandomObs().adjust(adjX, adjY));
+            adjX += constants.gridSize;
         }
-        else if(wall == 'b'){
-            var newWall = [];
-            for(var i=0; i<constants.canvasWidth; i += gSize){
-                rand = Math.floor(Math.random()*(this.types.length));
-                newWall.push(this.types[rand].copy().adjust(i, constants.canvasHeight));
-            }
-            this.obsMap.push(newWall);
+        this.obsMap.unshift(newWall);
+        this.obsMap.pop();
+    }
+    this.addBottom = function(){
+        var ylen = this.obsMap.length;
+        var adjX = this.obsMap[ylen-1][0].x;
+        var adjY = this.obsMap[ylen-1][0].y + constants.gridSize;
+        var newWall = [];
+        for(var i = 0; i < this.obsMap[0].length; i++){
+            newWall.push(this.getRandomObs().adjust(adjX, adjY));
+            adjX += constants.gridSize;
         }
-        else {console.log('incorrect input in addNewWall');}
-
+        this.obsMap.push(newWall);
+        this.obsMap.shift();
     }
     this.getLines = function(){
         var lines = [];
@@ -345,17 +361,15 @@ function Inserter(obsList){
             });
         });
     }
-    // initialize
-    var rand;
-    for(var i = 0; i < constants.canvasHeight/constants.gridSize; i++){
-        this.obsMap.push([]);
-        for(var j = 0; j < constants.canvasWidth/constants.gridSize; j++){
-            rand = Math.floor(Math.random()*(this.types.length));
-            this.obsMap[i].push(this.types[rand].copy().adjust(j*constants.gridSize, i*constants.gridSize));
+    for(var i = 0; i < constants.canvasHeight; i+=constants.gridSize){
+        var newWall = [];
+        for(var j = 0; j < constants.canvasWidth; j+=constants.gridSize){
+            newWall.push(this.getRandomObs().adjust(j, i));
         }
+        this.obsMap.push(newWall);
     }
+    console.log(this.obsMap);
 }
-
 /*******************************************************************************
 * Game object
 *     keeps track of all other objects
@@ -408,7 +422,7 @@ function game(){
     this.printObs = function(){
         console.log(this.objs.objInserter.obsMap);
     };
-    this.getObs = function(){ return this.objs.objInserter.obsMap;};
+    //this.getObs = function(){ return this.objs.objInserter.obsMap;};
 }
 
 function renderer(){
@@ -517,19 +531,19 @@ function updater(){
         obstaclemovement.y += obstaclemovement.dy;
         if (obstaclemovement.x > 0){
             obstaclemovement.x -= constants.gridSize;
-            objinserter.addNewWall('l');
+            objinserter.addLeft();
         }
-        if (obstaclemovement.x < -constants.gridSize){
+        else if (obstaclemovement.x <= -constants.gridSize){
             obstaclemovement.x += constants.gridSize;
-            objinserter.addNewWall('r');
+            objinserter.addRight();
         }
-        if (obstaclemovement.y > 0){
+        else if (obstaclemovement.y > 0){
             obstaclemovement.y -= constants.gridSize;
-            objinserter.addNewWall('t');
+            objinserter.addTop();
         }
-        if (obstaclemovement.y < -constants.gridSize){
+        else if (obstaclemovement.y <= -constants.gridSize){
             obstaclemovement.y += constants.gridSize;
-            objinserter.addNewWall('b');
+            objinserter.addBottom();
         }
 
         objinserter.adjust(obstaclemovement.dx, obstaclemovement.dy);
