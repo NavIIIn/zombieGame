@@ -1,37 +1,39 @@
 /*******************************************************************************
-* Zombie Game                                                                  *
-* Joseph Navin                                                                 *
-* June 2016                                                                    *
+*                          _   __            _                                 *
+* Zombie Game             / | / /___ __   __(_)___                             *
+* Joseph Navin           /  |/ / __ `/ | / / / __ \                            *
+* July 2016             / /|  / /_/ /| |/ / / / / /                            *
+*                      /_/ |_/\__,_/ |___/_/_/ /_/                             *
+*                                                                              *
 *******************************************************************************/
 
 /*******************************************************************************
 * Constants
 */
 
-var CANVAS_WIDTH = 800;
-var CANVAS_HEIGHT = 600;
-var FRAME_TIME = 1000/60;
-var PLAYER_SIZE = 8;
-var PLAYER_SPEED = 4;
-var PLAYER_HEALTH = 80;
-var MELEE_DAMAGE = 2;
-var BULLET_SIZE = 3;
-var BULLET_SPEED = 15;
-var BULLET_DAMAGE = 8;
-var ZOMBIE_SIZE = 8;
-var ZOMBIE_SPEED = 3;
-var ZOMBIE_HEALTH = 20;
-var ZOMBIE_DAMAGE = 8;
-var BG_CYCLE_X = 160;
-var BG_CYCLE_Y = BG_CYCLE_X*Math.sqrt(3); // Hexagon geometry
-var OBS_CYCLE = 160;
-var CENTER_X = CANVAS_WIDTH/2;
-var CENTER_Y = CANVAS_HEIGHT/2;
-var FIRE_RATE = 25;
-var SPAWN_RATE = 1/500; // higher number means less spawn
-var MAX_ZOMBIES = 60;
-var GRID_SIZE = 8;
-var WALL_LENGTH = 80;
+'use strict';
+
+var constants = {
+    canvasWidth   :  800,
+    canvasHeight  :  600,
+    frameTime     :  1000/60,
+    gridSize      :  160,
+    hexGrid       :  160*Math.sqrt(3),
+    playerSize    :  8,
+    playerSpeed   :  4,
+    playerHealth  :  80,
+    fireRate      :  25,
+    meleeDamage   :  2,
+    bulletSize    :  3,
+    bulletSpeed   :  15,
+    bulletDamage  :  8,
+    zombieSize    :  8,
+    zombieSpeed   :  3,
+    zombieHealth  :  20,
+    zombieDamage  :  8,
+    spawnRate     :  1/500,
+    maxZombies    :  60
+}
 
 /*******************************************************************************
 * Class Constructors
@@ -39,79 +41,114 @@ var WALL_LENGTH = 80;
 
 /*-------- Player Class ------------------------------------------------------*/
 function player(){
-    //console.log('player constructor called');
-    this.name = "player";
-    this.team = "A";
-    this.code = 1;
-    this.health = PLAYER_HEALTH;
-    this.damage = MELEE_DAMAGE;
-    this.x = CANVAS_WIDTH/2;
-    this.y = CANVAS_HEIGHT/2;
-    this.dx = 0;
-    this.dy = 0;
+    this.code   = 1;
+    this.health = constants.playerHealth;
+    this.damage = constants.meleeDamage;
+    this.x      = constants.canvasWidth/2;
+    this.y      = constants.canvasHeight/2;
+    this.dx     = 0;
+    this.dy     = 0;
 }
 
 /*-------- Bullet Class ------------------------------------------------------*/
 function bullet(x, y){
-    //console.log('bullet constructor called');
-    this.name = "bullet";
-    this.team = "A";
-    this.code = 2;
+    this.code   = 2;
     this.health = 1;
-    this.damage = BULLET_DAMAGE;
-    this.x = CANVAS_WIDTH/2;
-    this.y = CANVAS_HEIGHT/2;
-    var xcomp = x - this.x;
-    var ycomp = y - this.y;
-    this.dx = BULLET_SPEED*xcomp*normalize(xcomp, ycomp);
-    this.dy = BULLET_SPEED*ycomp*normalize(xcomp, ycomp);
-    this.update = function(){
-        this.x += this.dx;
-        this.y += this.dy;
-    };
-    shotCounter = FIRE_RATE;
+    this.damage = constants.bulletDamage;
+    this.x      = constants.canvasWidth/2;
+    this.y      = constants.canvasHeight/2;
+    var xcomp   = x - this.x;
+    var ycomp   = y - this.y;
+    this.dx     = constants.bulletSpeed*xcomp*normalize(xcomp, ycomp);
+    this.dy     = constants.bulletSpeed*ycomp*normalize(xcomp, ycomp);
 }
 
 /*-------- Zombie Class ------------------------------------------------------*/
+function hash(){
+    this.values = [];
+    this.addGrid = function(x,y,o){
+        if(typeof this.values[x] == 'undefined'){
+            this.values[x] = [];
+            this.values[x][y] = [o];
+        }
+        else if(typeof this.values[x][y] == 'undefined')
+            this.values[x][y] = [o];
+        else{
+            this.values[x][y].push(o);
+        }
+    }   
+    this.add = function(o){
+        var x = div(o.x);
+        var y = div(o.y);
+        this.addGrid(x, y, o);
+        this.addGrid(x-1, y, o);
+        this.addGrid(x+1, y, o);
+        this.addGrid(x, y-1, o);
+        this.addGrid(x, y+1, o);
+    }
+    this.addAll = function(arr){
+        this.values = [];
+        if(arr.length > 0)
+            for(var i = 0; i < arr.length; i++)
+                this.add(arr[i]);
+    }
+    this.collidesWith = function(o){
+        var x = div(o.x);
+        var y = div(o.y);
+        if(typeof this.values[x] != 'undefined' && typeof this.values[x][y] != 'undefined')
+            return this.values[x][y].slice();
+        else
+            return [];
+    }
+    this.collideAll = function(arr, fun){
+        if(arr.length > 0)
+            for(var i = 0; i < arr.length; i++)
+                fun(arr[i], this.collidesWith(arr[i]));
+    }
+    this.test = function(){
+        function print(o, arr){
+            console.log(o);
+            console.log(arr);
+        }
+        this.addAll([
+            {x: 16, y: 16},
+            {x:300, y: 300},
+            {x: 15, y:15}
+        ]);
+        this.collideAll([
+            {x: 12, y: 12}
+        ], print);
+    }
+}
 function zombie(){
-    //console.log('zombie constructor called');
-    this.name = "zombie";
-    this.team = "B";
-    this.code = 3;
-    this.health = ZOMBIE_HEALTH;
-    this.damage = ZOMBIE_DAMAGE;
-    this.found = false;
-    // random distance from edge, then random edge
-    var xEdgeDist = Math.random()*CANVAS_WIDTH/2;
-    var yEdgeDist = Math.random()*CANVAS_HEIGHT/2;
-    this.x = Math.random()>0.5 ? xEdgeDist-CANVAS_WIDTH/4 : xEdgeDist+CANVAS_WIDTH*3/4;
-    this.y = Math.random()>0.5 ? yEdgeDist-CANVAS_HEIGHT/4 : yEdgeDist+CANVAS_HEIGHT*3/4;
+    var cWidth    = constants.canvasWidth; // shorter name
+    var cHeight   = constants.canvasHeight;
+    var xEdgeDist = Math.random()*cWidth/2; // random distance
+    var yEdgeDist = Math.random()*cHeight/2;
+
+    this.code     = 3;
+    this.health   = constants.zombieHealth;
+    this.damage   = constants.zombieDamage;
+    this.found    = false;
+
+    this.x  = flipCoin() ? xEdgeDist-cWidth/4 : xEdgeDist+cWidth*3/4;
+    this.y  = flipCoin() ? yEdgeDist-cHeight/4 : yEdgeDist+cHeight*3/4;
     this.dx = 0;
     this.dy = 0;
-    this.update = function(){
-        if(this.x < CANVAS_WIDTH/2+CANVAS_WIDTH/8){
-            this.found = true;
-        }
-        if(this.found){
-            var xcomp = CANVAS_WIDTH/2 - this.x;
-            var ycomp = CANVAS_HEIGHT/2 - this.y;
-            this.dx = ZOMBIE_SPEED*xcomp*normalize(xcomp, ycomp);
-            this.dy = ZOMBIE_SPEED*ycomp*normalize(xcomp, ycomp);
-        }
-        this.x += this.dx + worldMovement.dx;
-        this.y += this.dy + worldMovement.dy;
-    };
-}
 
+}
 
 /*******************************************************************************
 * Functions for math 
 */
 
+// 50% chance of returning true
+function flipCoin(){
+    return Math.random()>0.5;
+}
 // checks if the line drawn from p1 to q1 intersects with line drawn frm p2 to
 // q2
 function doIntersect(p1,q1,p2,q2){
-    //console.log('doIntercect called');
     function orientation(p, q, r){
         var o = (q.y-p.y)*(r.x-q.x) - (q.x-p.x)*(r.y-q.y);
         if(o == 0) return 0;
@@ -135,20 +172,26 @@ function doIntersect(p1,q1,p2,q2){
 
 // Helper with math for movement components
 function normalize(x, y){
-    //console.log('normalize called');
     return y == 0 ? 1 : Math.abs(Math.sqrt(1/(Math.pow(x/y,2)+1))/y);
 }
 
 // checks to see if an object is within a gridspace of corner in the positive
 // direction
 function withinGrid(corner, obj){
-    return obj - corner > 0 && obj - corner < WALL_LENGTH*2;
+    return obj - corner > 0 && obj - corner < constants.gridSize;
+}
+
+function withinRadius(x1, y1, x2, y2, r){
+    return Math.sqrt(Math.pow(x1-x2,2)+Math.pow(y1-y2,2)) < r;
+}
+
+function div(n){
+    return Math.round(n/(constants.zombieSize + constants.bulletSize)/2);
 }
 
 /*-------- Obstacle Classes---------------------------------------------------*/
 
 function point(x, y){
-    ////console.log('point constructor called');
     this.x = x;
     this.y = y;
     this.copy = function(){
@@ -156,7 +199,6 @@ function point(x, y){
     }
 }
 function line(p, q){
-    //console.log('line constructor called');
     this.p = p;
     this.q = q;
     this.print = function(){
@@ -169,11 +211,12 @@ function line(p, q){
 }
 
 function obstacle(lines, corners){
-    //console.log('obstacle constructor called');
     this.corners = corners; // edges that can be walked around
     this.lines = lines;
+    this.x = 0;
+    this.y = 0;
     this.adjust = function(x, y){
-        for(i = 0; i < lines.length; i++){
+        for(var i = 0; i < lines.length; i++){
             this.lines[i].p.x += x;
             this.lines[i].p.y += y;
             this.lines[i].q.x += x;
@@ -183,12 +226,14 @@ function obstacle(lines, corners){
             corners[i].x += x;
             corners[i].y += y;
         }
+        this.x +=x;
+        this.y +=y;
         return this;
     }
     this.copy = function(){
         var newLines = [];
         var newCorners = [];
-                this.lines.forEach(function(v, i, arr){
+        this.lines.forEach(function(v, i, arr){
             newLines.push(v.copy());
         });
         this.corners.forEach(function(v, i, arr){
@@ -198,88 +243,107 @@ function obstacle(lines, corners){
     }
 }
 
-var middle = new point(WALL_LENGTH, WALL_LENGTH);
-var topEdge = new point(WALL_LENGTH, 0);
-var bottomEdge = new point(WALL_LENGTH, WALL_LENGTH*2);
-var leftEdge = new point(0, WALL_LENGTH);
-var rightEdge = new point(WALL_LENGTH*2, WALL_LENGTH);
-var topMid = new point(WALL_LENGTH, WALL_LENGTH/2);
-var bottomMid = new point(WALL_LENGTH, WALL_LENGTH*3/2);
-var leftMid = new point(WALL_LENGTH/2, WALL_LENGTH);
-var rightMid = new point(WALL_LENGTH*3/2, WALL_LENGTH);
+// returns a list of potential obstacles
+function getObstacles(){
+    var wallLength = constants.gridSize/2;
 
-// lines spanning 2 wall lengths
-var lineV2 = new line(topEdge, bottomEdge);
-var lineH2 = new line(leftEdge, rightEdge);
-//  lines spanning 1 wall length
-var lineV1a = new line(topEdge, middle);
-var lineV1b = new line(middle, bottomEdge);
-var lineH1a = new line(leftEdge, middle);
-var lineH1b = new line(middle, rightEdge);
-// lines spanning half a wall length
-var lineV12a = new line(topEdge, topMid);
-var lineV12b = new line(topMid, middle);
-var lineV12c = new line(middle, bottomMid);
-var lineV12d = new line(bottomMid, bottomEdge);
-var lineH12a = new line(leftEdge, leftMid);
-var lineH12b = new line(leftMid, middle);
-var lineH12c = new line(middle, rightMid);
-var lineH12d = new line(rightMid, rightEdge);
-// lines spanning 3/2 a wall length
-var lineV32a = new line(topEdge, bottomMid);
-var lineV32b = new line(topMid, bottomEdge);
-var lineH32a = new line(leftEdge, rightMid);
-var lineH32b = new line(leftMid, rightEdge);
+    var middle = new point(wallLength, wallLength);
+    var topEdge = new point(wallLength, 0);
+    var bottomEdge = new point(wallLength, wallLength*2);
+    var leftEdge = new point(0, wallLength);
+    var rightEdge = new point(wallLength*2, wallLength);
+    var topMid = new point(wallLength, wallLength/2);
+    var bottomMid = new point(wallLength, wallLength*3/2);
+    var leftMid = new point(wallLength/2, wallLength);
+    var rightMid = new point(wallLength*3/2, wallLength);
 
-// used for reference do not alter
-var obs = [
-    new obstacle([lineV32a],[topEdge, bottomMid]),
-    new obstacle([lineV32b],[topMid, bottomEdge]),
-    new obstacle([lineH32a],[leftEdge, rightMid]),
-    new obstacle([lineH32b],[leftMid, rightEdge]),
-    new obstacle([lineV1a, lineH12b, lineH12c], [topEdge, leftMid, rightMid]),
-    new obstacle([lineV1b, lineH12b, lineH12c], [bottomEdge, leftMid, rightMid]),
-    new obstacle([lineH1a, lineV12b, lineV12c], [leftEdge, topMid, bottomMid]),
-    new obstacle([lineH1b, lineV12b, lineV12c], [rightEdge, topMid, bottomMid])
-];
+    // lines spanning 2 wall lengths
+    var lineV2 = new line(topEdge, bottomEdge);
+    var lineH2 = new line(leftEdge, rightEdge);
+    //  lines spanning 1 wall length
+    var lineV1a = new line(topEdge, middle);
+    var lineV1b = new line(middle, bottomEdge);
+    var lineH1a = new line(leftEdge, middle);
+    var lineH1b = new line(middle, rightEdge);
+    // lines spanning half a wall length
+    var lineV12a = new line(topEdge, topMid);
+    var lineV12b = new line(topMid, middle);
+    var lineV12c = new line(middle, bottomMid);
+    var lineV12d = new line(bottomMid, bottomEdge);
+    var lineH12a = new line(leftEdge, leftMid);
+    var lineH12b = new line(leftMid, middle);
+    var lineH12c = new line(middle, rightMid);
+    var lineH12d = new line(rightMid, rightEdge);
+    // lines spanning 3/2 a wall length
+    var lineV32a = new line(topEdge, bottomMid);
+    var lineV32b = new line(topMid, bottomEdge);
+    var lineH32a = new line(leftEdge, rightMid);
+    var lineH32b = new line(leftMid, rightEdge);
+
+    // used for reference do not alter
+    return [
+        new obstacle([lineV32a],[topEdge, bottomMid]),
+        new obstacle([lineV32b],[topMid, bottomEdge]),
+        new obstacle([lineH32a],[leftEdge, rightMid]),
+        new obstacle([lineH32b],[leftMid, rightEdge]),
+        new obstacle([lineV1a, lineH12b, lineH12c], [topEdge, leftMid, rightMid]),
+        new obstacle([lineV1b, lineH12b, lineH12c], [bottomEdge, leftMid, rightMid]),
+        new obstacle([lineH1a, lineV12b, lineV12c], [leftEdge, topMid, bottomMid]),
+        new obstacle([lineH1b, lineV12b, lineV12c], [rightEdge, topMid, bottomMid])
+    ];
+
+}
+var obs = getObstacles();
+
 
 function Inserter(obsList){
-    //console.log('Inserter called');
     this.types = obsList;
     this.obsMap = [];
-    this.addNewWall = function(wall){
-        // wall (l, r, t, b) indicates which wall
-        var rand;
-        if(wall == 'l'){
-            for(var i=0; i<this.obsMap.length; i++){
-                rand = Math.floor(Math.random()*(this.types.length));
-                this.obsMap[i].unshift(this.types[rand].copy().adjust(-WALL_LENGTH*2, i*WALL_LENGTH*2));
-            }
+    this.getRandomObs = function(){
+        var rand = Math.floor(Math.random()*this.types.length);
+        return this.types[rand].copy();
+    }
+    this.addLeft = function(){
+        var adjX = this.obsMap[0][0].x - constants.gridSize;
+        var adjY = this.obsMap[0][0].y;
+        for(var i = 0; i < this.obsMap.length; i++){
+            this.obsMap[i].unshift(this.getRandomObs().adjust(adjX, adjY));
+            this.obsMap[i].pop();
+            adjY += constants.gridSize;
         }
-        else if(wall == 'r'){
-            for(var i=0; i<this.obsMap.length; i++){
-                rand = Math.floor(Math.random()*(this.types.length));
-                this.obsMap[i].push(this.types[rand].copy().adjust(CANVAS_WIDTH, i*WALL_LENGTH*2));
-            }
+    }
+    this.addRight = function(){
+        var xlen = this.obsMap[0].length;
+        var adjX = this.obsMap[0][xlen-1].x + constants.gridSize;
+        var adjY = this.obsMap[0][xlen-1].y;
+        for(var i = 0; i < this.obsMap.length; i++){
+            this.obsMap[i].push(this.getRandomObs().adjust(adjX, adjY));
+            this.obsMap[i].shift();
+            adjY += constants.gridSize;
         }
-        else if(wall == 't'){
-            var newWall = [];
-            for(var i=0; i<CANVAS_WIDTH; i += 2*WALL_LENGTH){
-                rand = Math.floor(Math.random()*(this.types.length));
-                newWall.push(this.types[rand].copy().adjust(i, -2*WALL_LENGTH));
-            }
-            this.obsMap.unshift(newWall);
+    }
+    this.addTop = function(){
+        var adjX = this.obsMap[0][0].x;
+        var adjY = this.obsMap[0][0].y - constants.gridSize;
+        var newWall = [];
+        for(var i = 0; i < this.obsMap[0].length; i++){
+            newWall.push(this.getRandomObs().adjust(adjX, adjY));
+            adjX += constants.gridSize;
         }
-        else if(wall == 'b'){
-            var newWall = [];
-            for(var i=0; i<CANVAS_WIDTH; i += 2*WALL_LENGTH){
-                rand = Math.floor(Math.random()*(this.types.length));
-                newWall.push(this.types[rand].copy().adjust(i, CANVAS_HEIGHT));
-            }
-            this.obsMap.push(newWall);
+        this.obsMap.unshift(newWall);
+        this.obsMap.pop();
+    }
+    this.addBottom = function(){
+        var ylen = this.obsMap.length;
+        var adjX = this.obsMap[ylen-1][0].x;
+        var adjY = this.obsMap[ylen-1][0].y + constants.gridSize;
+        var newWall = [];
+        for(var i = 0; i < this.obsMap[0].length; i++){
+            newWall.push(this.getRandomObs().adjust(adjX, adjY));
+            adjX += constants.gridSize;
         }
-        else {console.log('incorrect input in addNewWall');}
-
+        this.obsMap.push(newWall);
+        this.obsMap.shift();
     }
     this.getLines = function(){
         var lines = [];
@@ -290,12 +354,6 @@ function Inserter(obsList){
         });
         return lines;
     }
-    this.test = function(){
-        this.addNewWall('t');
-        this.addNewWall('b');
-        this.addNewWall('l');
-        this.addNewWall('r');
-    }
     this.adjust = function(x, y){
         this.obsMap.forEach(function(row, j, m){
             row.forEach(function(v, i, r){
@@ -303,268 +361,275 @@ function Inserter(obsList){
             });
         });
     }
-    // initialize
-    var rand;
-    for(var i = 0; i < CANVAS_HEIGHT/WALL_LENGTH/2; i++){
-        this.obsMap.push([]);
-        for(var j = 0; j < CANVAS_WIDTH/WALL_LENGTH/2; j++){
-            rand = Math.floor(Math.random()*(this.types.length));
-            this.obsMap[i].push(this.types[rand].copy().adjust(j*WALL_LENGTH*2, i*WALL_LENGTH*2));
+    for(var i = 0; i < constants.canvasHeight; i+=constants.gridSize){
+        var newWall = [];
+        for(var j = 0; j < constants.canvasWidth; j+=constants.gridSize){
+            newWall.push(this.getRandomObs().adjust(j, i));
         }
+        this.obsMap.push(newWall);
+    }
+    console.log(this.obsMap);
+}
+/*******************************************************************************
+* Game object
+*     keeps track of all other objects
+*/
+function game(){
+    this.objs = {
+        keyMap: [false, false, false, false],
+        player: new player(),
+        bullets: [],
+        zombies: [],
+        worldMovement: {x:0, y:0, dx:0, dy:0},
+        objInserter: new Inserter(obs),
+        obstacleMovement: {x:0, y:0, dx:0, dy:0},
+        shotCounter: 0,
+        score: 0
+    }
+    this.test = 0;
+    this.updater = new updater();
+    this.renderer = new renderer();
+    var g = this; // so next functions aren't confused by 'this'
+    this.arrowDown = function(e){
+        switch(e.keyCode){
+        case 87: case 38: g.objs.keyMap[0] = true; break; //w and up
+        case 65: case 37: g.objs.keyMap[1] = true; break; //a and left
+        case 83: case 40: g.objs.keyMap[2] = true; break; //s and down
+        case 68: case 39: g.objs.keyMap[3] = true; break; //d and right
+        }
+    };
+    this.arrowUp = function(e){
+        switch(e.keyCode){
+        case 87: case 38: g.objs.keyMap[0] = false; break; //w and up
+        case 65: case 37: g.objs.keyMap[1] = false; break; //a and left
+        case 83: case 40: g.objs.keyMap[2] = false; break; //s and down
+        case 68: case 39: g.objs.keyMap[3] = false; break; //d and right
+        }
+    };
+    this.mouseClick = function(e){
+        if(g.objs.shotCounter < 1){
+            var mouseX = e.pageX - g.renderer.canvas.getBoundingClientRect().left;
+            var mouseY = e.pageY - g.renderer.canvas.getBoundingClientRect().top;
+            g.objs.bullets.push(new bullet(mouseX, mouseY));
+        }
+    };
+    this.update = function(){
+        return this.updater.update(this.objs);
+    };
+    this.render = function(){
+        this.renderer.render(this.objs);
+    };
+    this.printObs = function(){
+        console.log(this.objs.objInserter.obsMap);
+    };
+    //this.getObs = function(){ return this.objs.objInserter.obsMap;};
+}
+
+function renderer(){
+    this.canvas = document.getElementById('gameStage');
+    this.ctx = this.canvas.getContext("2d");
+    this.bg = new Image();
+    var r = this;
+    this.bg.src = "resources/hex_bg.png";
+    this.player = function(p){
+        this.ctx.beginPath();
+        this.ctx.arc(p.x,p.y,constants.playerSize,0,2*Math.PI);
+        this.ctx.fill();
+    }
+    this.bullets = function(b){
+        b.forEach(function(v, i, arr){
+            r.ctx.beginPath();
+            r.ctx.arc(v.x,v.y,constants.bulletSize,0,2*Math.PI);
+            r.ctx.fill();
+        });
+    }
+    this.zombies = function(z){
+        z.forEach(function(v, i, arr){
+            r.ctx.beginPath();
+            r.ctx.arc(v.x,v.y,constants.zombieSize,0,2*Math.PI);
+            r.ctx.fillStyle = '#105F10';
+            r.ctx.fill();
+            r.ctx.fillStyle = '#000000';
+        });
+    }
+    this.world = function(worldMovement){
+        this.ctx.beginPath();
+        this.ctx.drawImage(this.bg,worldMovement.x,worldMovement.y);
+        this.ctx.closePath();
+    }
+    this.obstacles = function(obstaclemovement, objinserter){
+        objinserter.getLines().forEach(function(v, i, arr){
+            r.ctx.beginPath();
+            r.ctx.moveTo(v.p.x, v.p.y);
+            r.ctx.lineTo(v.q.x, v.q.y);
+            r.ctx.stroke();
+        });
+    }
+    this.render = function(objs){
+        this.ctx.clearRect(0,0,constants.canvasWidth,constants.canvasHeight);
+        this.world(objs.worldMovement);
+        this.zombies(objs.zombies);
+        this.bullets(objs.bullets);
+        this.player(objs.player);
+        this.obstacles(objs.obstacleMovement, objs.objInserter)
     }
 }
 
-// Factory for map array
-function mapFactory(){
-    //console.log('mapFactory called');
-    var m = [];
-    for(i=0;i<CANVAS_WIDTH;i++){
-        var a = [];
-        for(j=0;j<CANVAS_HEIGHT;j++){
-            a.push(0);
+function updater(){
+    var gameTimer = 0;
+    var zombieHash = new hash();
+    var killed = 0;
+    function updateZombie(z, worldMovement){
+        // move
+        if(z.x < constants.canvasWidth/2+constants.canvasWidth/8){
+            z.found = true;
         }
-        m.push(a);
+        if(z.found){
+            var xcomp = constants.canvasWidth/2 - z.x;
+            var ycomp = constants.canvasHeight/2 - z.y;
+            z.dx = constants.zombieSpeed*xcomp*normalize(xcomp, ycomp);
+            z.dy = constants.zombieSpeed*ycomp*normalize(xcomp, ycomp);
+        }
+        z.x += z.dx + worldMovement.dx;
+        z.y += z.dy + worldMovement.dy;
     }
-    return m;
-}
+    this.player = function(p){
+        zombieHash.collideAll([p], function(p, arr){
+            var rad = constants.zombieSize + constants.bulletSize;
+            arr.forEach(function(z, index, arr){
+                if(withinRadius(z.x, z.y, p.x, p.y, rad)){
+                    z.health -= p.damage;
+                    p.health -= z.damage;
+                }
+            });
+        });
+        return p;
+    };
+    this.world = function(worldMovement, keyMap){
+        var raw_x = (keyMap[1]?1:0) + (keyMap[3]?-1:0);
+        var raw_y = (keyMap[0]?1:0) + (keyMap[2]?-1:0);
+        worldMovement.dx = constants.playerSpeed*raw_x*normalize(raw_x, raw_y);
+        worldMovement.dy = constants.playerSpeed*raw_y*normalize(raw_x, raw_y);
+        worldMovement.x += worldMovement.dx;
+        worldMovement.y += worldMovement.dy;
+        if (worldMovement.x > 0)
+            worldMovement.x -= constants.gridSize;
+        if (worldMovement.x < -constants.gridSize)
+            worldMovement.x += constants.gridSize;
+        if (worldMovement.y > 0)
+            worldMovement.y -= constants.hexGrid;
+        if (worldMovement.y < -constants.hexGrid)
+            worldMovement.y += constants.hexGrid;
 
+    };
+    this.obstacles = function(obstaclemovement, objinserter, keyMap){
+        var raw_x = (keyMap[1]?1:0) + (keyMap[3]?-1:0);
+        var raw_y = (keyMap[0]?1:0) + (keyMap[2]?-1:0);
+        obstaclemovement.dx = constants.playerSpeed*raw_x*normalize(raw_x, raw_y);
+        obstaclemovement.dy = constants.playerSpeed*raw_y*normalize(raw_x, raw_y);
+        obstaclemovement.x += obstaclemovement.dx;
+        obstaclemovement.y += obstaclemovement.dy;
+        if (obstaclemovement.x > 0){
+            obstaclemovement.x -= constants.gridSize;
+            objinserter.addLeft();
+        }
+        else if (obstaclemovement.x <= -constants.gridSize){
+            obstaclemovement.x += constants.gridSize;
+            objinserter.addRight();
+        }
+        else if (obstaclemovement.y > 0){
+            obstaclemovement.y -= constants.gridSize;
+            objinserter.addTop();
+        }
+        else if (obstaclemovement.y <= -constants.gridSize){
+            obstaclemovement.y += constants.gridSize;
+            objinserter.addBottom();
+        }
+
+        objinserter.adjust(obstaclemovement.dx, obstaclemovement.dy);
+        
+    }
+    this.zombies = function(z, worldMovement){
+        killed = 0;
+        zombieHash.addAll(z);
+        if(Math.random() < Math.log(gameTimer)*constants.spawnRate && z.length < constants.maxZombies)
+            z.push(new zombie());
+        z.forEach(function(v,i,arr){
+            updateZombie(v, worldMovement);
+            if(v.health <= 0)
+                killed++;
+        });
+        return z.filter(function(v){
+            return v.health > 0 && v.x > -constants.canvasWidth && v.x < 2*constants.canvasWidth
+                && v.y > -constants.canvasHeight && v.y <2* constants.canvasWidth;
+        });
+    };
+    this.bullets = function(b){
+        zombieHash.collideAll(b, function(b, arr){
+            var rad = constants.zombieSize + constants.bulletSize;
+            arr.forEach(function(z, index, arr){
+                if(withinRadius(z.x, z.y, b.x, b.y, rad)){
+                    z.health -= b.damage;
+                    b.health -= z.damage;
+                }
+            });
+        });
+        b.forEach(function(v, i, arr){
+            v.x += v.dx;
+            v.y += v.dy;
+        });
+        return b.filter(function(v){ // clear out extra bullets
+            return v.health > 0 &&
+                   v.x > 0 && v.x < constants.canvasWidth &&
+                   v.y > 0 && v.y < constants.canvasWidth;
+        });
+    };
+    this.update = function(objs){
+        document.getElementById("score").innerHTML = "Score: " + objs.score;
+        document.getElementById("health").innerHTML = "Health: " + objs.player.health;
+        objs.zombies = this.zombies(objs.zombies, objs.worldMovement);
+        objs.bullets = this.bullets(objs.bullets);
+        objs.player = this.player(objs.player);
+        this.world(objs.worldMovement, objs.keyMap);
+        this.obstacles(objs.obstacleMovement, objs.objInserter, objs.keyMap);
+        gameTimer++;
+        objs.shotCounter--;
+        objs.score += killed;
+
+        if(objs.player.health <= 0)
+            return false;
+        else
+            return true;
+    };
+}
 
 /*******************************************************************************
 * Main Function
 */
 
 function Main(){
-    //console.log('Main called');
     // Interface variables
-    var canvas = document.getElementById('gameStage');
-    var ctx = canvas.getContext("2d");
-    var keyMap = [false, false, false, false]; // WASD pressed
-    var gameMap = mapFactory();
-    var objList = []; // All objects
-    var bulletArray = [];
-    var zombieArray = [];
-    var p1 = new player();
-    var worldMovement = {x:0, y:0, dx:0, dy:0};
-    var shotCounter = 0;
-    var gameTimer = 0;
-    var score = 0;
     var gameLoop;
-    var objInserter = new Inserter(obs);
-    var obstacleMovement = {x:0, y:0, dx:0, dy:0};
-    //objInserter.test();
-    
-    // Background image
-    var bg = new Image();
-    bg.onload = function(){
-        ctx.beginPath();
-        ctx.drawImage(bg,0,0); // wait for load
-        ctx.closePath();
-    };
-    bg.src = "resources/hex_bg.png";
+    var gameObj = new game();
 
     // respond to events
-    document.getElementById("doc").onkeydown = function(e){
-        switch(e.keyCode){
-        case 87: case 38: keyMap[0] = true; break; //w and up
-        case 65: case 37: keyMap[1] = true; break; //a and left
-        case 83: case 40: keyMap[2] = true; break; //s and down
-        case 68: case 39: keyMap[3] = true; break; //d and right
-        }
-    }
-    document.getElementById("doc").onkeyup = function(e){
-        switch(e.keyCode){
-        case 87: case 38: keyMap[0] = false; break; //w and up
-        case 65: case 37: keyMap[1] = false; break; //a and left
-        case 83: case 40: keyMap[2] = false; break; //s and down
-        case 68: case 39: keyMap[3] = false; break; //d and right
-        }
-    }
-    document.getElementById("doc").onclick = function(e){
-        if(shotCounter < 1){
-            mouseX = e.pageX - canvas.getBoundingClientRect().left;
-            mouseY = e.pageY - canvas.getBoundingClientRect().top;
-            bulletArray.push(new bullet(mouseX, mouseY));
-        }
-    }
+    document.getElementById("doc").onkeydown = gameObj.arrowDown;
+    document.getElementById("doc").onkeyup = gameObj.arrowUp;
+    document.getElementById("doc").onclick = gameObj.mouseClick;
 
-    // adds  objects to gameMap
-    objMap={
-        square:function(o, w){
-            for(i=o.x-Math.floor(w/2);i<o.x+floor(w/2);i++){
-                for(j=o.y-Math.floor(w/2);j<o.y+w/2;j++){
-                    gameMap[i][j] = o.code;
-                }
-            }
-        },
-        circle:function(o, r){
-            for(i=o.x-r;i<o.x+r;i++){
-                span = r * Math.asin( Math.cos( (o.x-i)/r ));
-                for(j=Math.floor(o.y-span);j<o.y+span;j++){
-                    gameMap[i][j] = o.code;
-                }
-            }
-        }
-    };
-    objMap.circle({x:7,y:10,code:1}, 3);
-
-    // Update
-    function update(){
-        // Display
-        document.getElementById("score").innerHTML = "Score: " + score;
-        document.getElementById("health").innerHTML = "Health: " + p1.health;
-
-        // Game objects
-        if(Math.random() < Math.log(gameTimer)*SPAWN_RATE && zombieArray.length < MAX_ZOMBIES)
-            zombieArray.push(new zombie());
-
-        bulletArray.forEach(function(v, i, arr){
-            v.x += v.dx;
-            v.y += v.dy;
-        });
-        
-        zombieArray.forEach(function(v, i, arr){
-            // move
-            if(v.x < CANVAS_WIDTH/2+CANVAS_WIDTH/8){
-                v.found = true;
-            }
-            if(v.found){
-                var xcomp = CANVAS_WIDTH/2 - v.x;
-                var ycomp = CANVAS_HEIGHT/2 - v.y;
-                v.dx = ZOMBIE_SPEED*xcomp*normalize(xcomp, ycomp);
-                v.dy = ZOMBIE_SPEED*ycomp*normalize(xcomp, ycomp);
-            }
-            v.x += v.dx + worldMovement.dx;
-            v.y += v.dy + worldMovement.dy;
-
-            // detect collisions
-            bulletArray.forEach(function(b, j, arr){
-                if(Math.abs(v.x-b.x)<ZOMBIE_SIZE && Math.abs(v.y-b.y)<ZOMBIE_SIZE){
-                    v.health -= b.damage;
-                    b.health -= v.damage;
-                    if(v.health < 1)
-                        score++;
-                }});
-            if(Math.abs(v.x-p1.x)<ZOMBIE_SIZE && Math.abs(v.y-p1.y)<ZOMBIE_SIZE){
-                v.health -= p1.damage;
-                p1.health -= v.damage;
-                if(v.health < 1)
-                    score++;
-            }
-            zombieArray.forEach(function(v2, i2, arr){
-                if(Math.abs(v.x-v2.x)<ZOMBIE_SIZE*2 && Math.abs(v2.y-v.y)<ZOMBIE_SIZE*2 && i != i2){
-                    // undo movement
-                    v.x -= v.dx + worldMovement.dx;
-                    v.y -= v.dy + worldMovement.dy;
-                }
-            });
-
-        });
-
-        // Remove objects
-        bulletArray = bulletArray.filter(function(v){ // clear out extra bullets
-            return v.health > 0 && v.x > 0 && v.x < CANVAS_WIDTH && v.y > 0 && v.y < CANVAS_WIDTH;
-        });
-
-        zombieArray = zombieArray.filter(function(v){
-            return v.health > 0 && v.x > -CANVAS_WIDTH && v.x < 2*CANVAS_WIDTH
-                && v.y > -CANVAS_HEIGHT && v.y <2* CANVAS_WIDTH;
-        });
-
-        if(p1.health < 1){
-            zombieArray = [];
+    // primary game loop
+    function mainloop(){
+        if(!gameObj.update()){
             clearInterval(gameLoop);
             Main();
         }
-    }
-
-    function render(){
-        //console.log('render called');
-        // This stuff should be moved to update
-        ctx.clearRect(0,0,CANVAS_WIDTH,CANVAS_HEIGHT);
-        // Background: detirmines direction, adjusts speed, and loops when at edge of map
-        var raw_x = (keyMap[1]?1:0) + (keyMap[3]?-1:0);
-        var raw_y = (keyMap[0]?1:0) + (keyMap[2]?-1:0);
-        worldMovement.dx = PLAYER_SPEED*raw_x*normalize(raw_x, raw_y);
-        worldMovement.dy = PLAYER_SPEED*raw_y*normalize(raw_x, raw_y);
-        worldMovement.x += worldMovement.dx;
-        worldMovement.y += worldMovement.dy;
-        if (worldMovement.x > 0)
-            worldMovement.x -= BG_CYCLE_X;
-        if (worldMovement.x < -BG_CYCLE_X)
-            worldMovement.x += BG_CYCLE_X;
-        if (worldMovement.y > 0)
-            worldMovement.y -= BG_CYCLE_Y;
-        if (worldMovement.y < -BG_CYCLE_Y)
-            worldMovement.y += BG_CYCLE_Y;
-        ctx.beginPath();
-        ctx.drawImage(bg,worldMovement.x,worldMovement.y);
-
-        obstacleMovement.dx = PLAYER_SPEED*raw_x*normalize(raw_x, raw_y);
-        obstacleMovement.dy = PLAYER_SPEED*raw_y*normalize(raw_x, raw_y);
-        obstacleMovement.x += obstacleMovement.dx;
-        obstacleMovement.y += obstacleMovement.dy;
-        if (obstacleMovement.x > 0){
-            obstacleMovement.x -= OBS_CYCLE;
-            objInserter.addNewWall('l');
-            console.log('add wall left');
-        }
-        if (obstacleMovement.x < -OBS_CYCLE){
-            obstacleMovement.x += OBS_CYCLE;
-            objInserter.addNewWall('r');
-            console.log('add wall right');
-        }
-        if (obstacleMovement.y > 0){
-            obstacleMovement.y -= OBS_CYCLE;
-            objInserter.addNewWall('t');
-            console.log('add wall top');
-        }
-        if (obstacleMovement.y < -OBS_CYCLE){
-            obstacleMovement.y += OBS_CYCLE;
-            objInserter.addNewWall('b');
-            console.log('add wall bottom');
-        }
-
-        objInserter.adjust(obstacleMovement.dx, obstacleMovement.dy);
-        //objInserter.objects.forEach(function(v, i, arr){
-        //    v.adjust(obstacleMovement.dx, obstacleMovement.dy);
-        //});
-
-        // foreground
-        zombieArray.forEach(function(v, i, arr){
-            ctx.beginPath();
-            ctx.arc(v.x,v.y,ZOMBIE_SIZE,0,2*Math.PI);
-            ctx.fillStyle = '#105F10';
-            ctx.fill();
-            ctx.fillStyle = '#000000';
-        });
-        bulletArray.forEach(function(v, i, arr){
-            ctx.beginPath();
-            ctx.arc(v.x,v.y,BULLET_SIZE,0,2*Math.PI);
-            ctx.fill();
-        });
-        objInserter.getLines().forEach(function(v, i, arr){
-            ctx.beginPath();
-            ctx.moveTo(v.p.x, v.p.y);
-            ctx.lineTo(v.q.x, v.q.y);
-            ctx.stroke();
-        });
-        ctx.beginPath();
-        ctx.arc(p1.x,p1.y,PLAYER_SIZE,0,2*Math.PI);
-        ctx.fill();
-    }
-    
-    // primary game loop
-    function mainLoop(){
-        shotCounter--;
-        gameTimer++;
-
-        update();
-        render();
+        gameObj.render();
     }
 
     // run game
     document.getElementById("start").onclick = function(){
+        //gameObj.printObs();
         clearInterval(gameLoop);
-        gameLoop=setInterval(mainLoop, FRAME_TIME);
+        gameLoop = setInterval(mainloop, constants.frameTime);
     }
 }
