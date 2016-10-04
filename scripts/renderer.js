@@ -35,7 +35,7 @@ define(['./constants', './mathStuff'], function(Constants, Maths){
     function obstacles(obstaclemovement, objinserter){
         objinserter.getLines().forEach(function(v, i, arr){
             ctx.beginPath();
-            ctx.lineWidth = 4;
+            ctx.lineWidth = Constants.wallWidth;
             ctx.moveTo(v.p.x, v.p.y);
             ctx.lineTo(v.q.x, v.q.y);
             ctx.stroke();

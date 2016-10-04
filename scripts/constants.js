@@ -20,5 +20,6 @@ define({
     zombieHealth  :  20,
     zombieDamage  :  8,
     spawnRate     :  1/500,
-    maxZombies    :  60
+    maxZombies    :  60,
+    wallWidth     :  4
 });

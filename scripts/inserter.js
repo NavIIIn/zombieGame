@@ -5,7 +5,7 @@
  *   - adjust: moves all obstacles x to the right and y down
  *   - collidesAll: returns array of fn operated on objs where collisions occur
  */
-define(['./constants', './mathStuff'], function(Constants, Maths){
+define(['./constants'], function(Constants){
     function point(x, y){
         this.x = x;
         this.y = y;
@@ -262,6 +262,7 @@ define(['./constants', './mathStuff'], function(Constants, Maths){
             });
         },
         collidesAll: function(objs, size, fn){
+            size = size+Constants.wallWidth
             return objs.map(function(cur, i, arr){
                 if(collides(cur, size))
                     return fn(cur);
@@ -270,6 +271,7 @@ define(['./constants', './mathStuff'], function(Constants, Maths){
             });
         },
         getCollisionDirection: function(obj, size){
+            size = size+Constants.wallWidth
             return colDir(obj, size);
         }
     };
