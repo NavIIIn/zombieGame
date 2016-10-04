@@ -3,14 +3,15 @@
  *   - add(direction): adds a row of walls in that direction
  *   - getLines: gets lines from all obstacles
  *   - adjust: moves all obstacles x to the right and y down
+ *   - collidesAll: returns array of fn operated on objs where collisions occur
  */
-define(['./constants'], function(Constants){
+define(['./constants', './mathStuff'], function(Constants, Maths){
     function point(x, y){
         this.x = x;
         this.y = y;
         this.copy = function(){
             return new point(this.x, this.y);
-        }
+        };
     }
     function line(p, q){
         this.p = p;
@@ -21,7 +22,7 @@ define(['./constants'], function(Constants){
         }
         this.copy = function(){
             return new line(this.p.copy(), this.q.copy());
-        }
+        };
     }
 
     function obstacle(lines, corners){
@@ -43,7 +44,7 @@ define(['./constants'], function(Constants){
             this.x +=x;
             this.y +=y;
             return this;
-        }
+        };
         this.copy = function(){
             var newLines = [];
             var newCorners = [];
@@ -54,7 +55,7 @@ define(['./constants'], function(Constants){
                 newCorners.push(v.copy());
             });
             return new obstacle(newLines, newCorners);
-        }
+        };
     }
 
     // returns a list of potential obstacles
@@ -107,6 +108,84 @@ define(['./constants'], function(Constants){
         ];
 
     }
+
+    function getLastGrid(){
+        var lastY = obsMap.length - 1;
+        var lastX = obsMap[lastY].length - 1;
+        return obsMap[lastY][lastX];
+    }
+
+    function collidesLine(obj, ln, size){
+        var inX = obj.x > ln.p.x - size && obj.x < ln.q.x + size
+            || obj.x > ln.q.x - size && obj.x < ln.p.x + size;
+        var inY = obj.y > ln.p.y - size && obj.y < ln.q.y + size 
+            || obj.y > ln.q.y - size && obj.y < ln.p.y + size;
+            
+        return inY && inX;
+    }
+
+    function findColGrid(obj){
+        var gridX = 0;
+        var gridY = 0;
+
+        while(obsMap[gridY] && obj.y > obsMap[gridY][gridX].y)
+            gridY++;
+        while(obsMap[gridY-1][gridX] && obj.x > obsMap[gridY-1][gridX].x)
+            gridX++;
+        return {x: gridX - 1, y: gridY - 1};
+    }
+
+    function collides(obj, size){
+        var lastSpace = getLastGrid();
+        var lastX = lastSpace.x + Constants.gridSize;
+        var lastY = lastSpace.y + Constants.gridSize;
+
+        // off grid
+        if(obj.x < obsMap[0][0].x || obj.y < obsMap[0][0].y ||
+           obj.x > lastX || obj.y > lastY)
+            return false;
+
+        var grid = findColGrid(obj);
+
+        return obsMap[grid.y][grid.x].lines.reduce(function(total, cur){
+            return total || collidesLine(obj, cur, size);
+        }, false);
+    }
+
+    function corner(ln, obj){
+        var lr = ln.p.x > obj.x && ln.q.x > obj.x
+            || ln.p.x < obj.x && ln.q.x < obj.x;
+        var tb = ln.p.y > obj.y && ln.q.y > obj.y
+            || ln.q.y < obj.y && ln.q.y < obj.y;
+        return lr && tb;
+    }
+
+    function colDir(obj, size){
+        var grid = findColGrid(obj);
+        return {
+            right: obsMap[grid.y][grid.x].lines.some(function(cur){
+                return collidesLine(obj, cur, size)
+                    && cur.p.x > obj.x && cur.q.x > obj.x
+                    && !corner(cur, obj);
+            }),
+            left: obsMap[grid.y][grid.x].lines.some(function(cur){
+                return collidesLine(obj, cur, size)
+                    && cur.p.x < obj.x && cur.q.x < obj.x
+                    && !corner(cur, obj);
+            }),
+            top: obsMap[grid.y][grid.x].lines.some(function(cur){
+                return collidesLine(obj, cur, size)
+                    && cur.p.y < obj.y && cur.q.y < obj.y
+                    && !corner(cur, obj);
+            }),
+            bottom: obsMap[grid.y][grid.x].lines.some(function(cur){
+                return collidesLine(obj, cur, size)
+                    && cur.p.y > obj.y && cur.q.y > obj.y
+                    && !corner(cur, obj);
+            })
+        };
+    }
+
     var obs = getObstacles();
 
     function getRandomObs(){
@@ -181,6 +260,17 @@ define(['./constants'], function(Constants){
                     v.adjust(x, y);
                 });
             });
+        },
+        collidesAll: function(objs, size, fn){
+            return objs.map(function(cur, i, arr){
+                if(collides(cur, size))
+                    return fn(cur);
+                else
+                    return cur;
+            });
+        },
+        getCollisionDirection: function(obj, size){
+            return colDir(obj, size);
         }
     };
 });
