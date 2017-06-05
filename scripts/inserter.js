@@ -57,7 +57,26 @@ define(['./constants'], function(Constants){
             return new obstacle(newLines, newCorners);
         };
     }
-
+    function adjustCorner(corner, movedir){
+        var moveamt = Constants.zombieSize;
+        var result = new point(corner.x, corner.y);
+        if(movedir.includes('n'))
+            result.y -= moveamt;
+        if(movedir.includes('s'))
+            result.y += moveamt;
+        if(movedir.includes('w'))
+            result.x -= moveamt;
+        if(movedir.includes('e'))
+            result.x += moveamt;
+        return result;
+    }
+    function adjustCorners(corners, movedirs){
+        var results = [];
+        for(i = corners.length; i--; ){
+            results.push(adjustCorner(corners[i], movedirs[i]));
+        }
+        return results;
+    }
     // returns a list of potential obstacles
     function getObstacles(){
         var wallLength = Constants.gridSize/2;
@@ -71,6 +90,12 @@ define(['./constants'], function(Constants){
         var bottomMid = new point(wallLength, wallLength*3/2);
         var leftMid = new point(wallLength/2, wallLength);
         var rightMid = new point(wallLength*3/2, wallLength);
+
+        // corners
+        var tl = new point(0, 0);
+        var tr = new point(wallLength*2, 0);
+        var bl = new point(0, wallLength*2);
+        var br = new point(wallLength*2, wallLength*2);
 
         // lines spanning 2 wall lengths
         var lineV2 = new line(topEdge, bottomEdge);
@@ -95,16 +120,44 @@ define(['./constants'], function(Constants){
         var lineH32a = new line(leftEdge, rightMid);
         var lineH32b = new line(leftMid, rightEdge);
 
+        //var c_a = adjustCorners([topEdge, topEdge, bottomMid], ['n', 's', 's']);
+        //var c_b = adjustCorners([topMid, bottomEdge, bottomEdge], ['n', 'n', 's']);
+        //var c_c = adjustCorners([leftEdge, leftEdge, rightMid], ['w', 'e', 'e']);
+        //var c_d = adjustCorners([leftMid, rightEdge, rightEdge], ['w', 'e', 'w']);
+        //var c_e = adjustCorners([topEdge, topEdge, leftMid, rightMid], ['n', 's', 'w', 'e']);
+        //var c_f = adjustCorners([bottomEdge, bottomEdge, leftMid, rightMid], ['n', 's', 'w', 'e']);
+        //var c_g = adjustCorners([leftEdge, leftEdge, topMid, bottomMid], ['w', 'e', 'n', 's']);
+        //var c_h = adjustCorners([rightEdge, rightEdge, topMid, bottomMid], ['w', 'e', 'n', 's']);
+
+        var c_a = adjustCorners([topEdge, topEdge, bottomMid, bottomMid], ['nw', 'ne', 'sw', 'se']);
+        var c_b = adjustCorners([topMid, topMid, bottomEdge, bottomEdge], ['nw', 'ne', 'sw', 'se']);
+        var c_c = adjustCorners([leftEdge, leftEdge, rightMid, rightMid], ['nw', 'sw', 'ne', 'se']);
+        var c_d = adjustCorners([leftMid, leftMid, rightEdge, rightEdge], ['nw', 'sw', 'ne', 'se']);
+        var c_e = adjustCorners([topEdge, topEdge, leftMid, leftMid, rightMid, rightMid], ['nw', 'ne', 'nw', 'sw', 'ne', 'se']);
+        var c_f = adjustCorners([bottomEdge, bottomEdge, leftMid, leftMid, rightMid, rightMid], ['sw', 'se', 'nw', 'sw', 'ne', 'se']);
+        var c_g = adjustCorners([leftEdge, leftEdge, topMid, topMid, bottomMid, bottomMid], ['nw', 'sw', 'nw', 'ne', 'sw', 'se']);
+        var c_h = adjustCorners([rightEdge, rightEdge, topMid, topMid, bottomMid, bottomMid], ['ne', 'se', 'nw', 'ne', 'sw', 'se']);
+
+        allCorners = [tl, tr, bl, br];
+        //c_a = c_a.concat(allCorners);
+        //c_b = c_b.concat(allCorners);
+        //c_c = c_c.concat(allCorners);
+        //c_d = c_d.concat(allCorners);
+        //c_e = c_e.concat(allCorners);
+        //c_f = c_f.concat(allCorners);
+        //c_g = c_g.concat(allCorners);
+        //c_h = c_h.concat(allCorners);
+
         // used for reference do not alter
         return [
-            new obstacle([lineV32a],[topEdge, bottomMid]),
-            new obstacle([lineV32b],[topMid, bottomEdge]),
-            new obstacle([lineH32a],[leftEdge, rightMid]),
-            new obstacle([lineH32b],[leftMid, rightEdge]),
-            new obstacle([lineV1a, lineH12b, lineH12c], [topEdge, leftMid, rightMid]),
-            new obstacle([lineV1b, lineH12b, lineH12c], [bottomEdge, leftMid, rightMid]),
-            new obstacle([lineH1a, lineV12b, lineV12c], [leftEdge, topMid, bottomMid]),
-            new obstacle([lineH1b, lineV12b, lineV12c], [rightEdge, topMid, bottomMid])
+            new obstacle([lineV32a],c_a),
+            new obstacle([lineV32b],c_b),
+            new obstacle([lineH32a],c_c),
+            new obstacle([lineH32b],c_d),
+            new obstacle([lineV1a, lineH12b, lineH12c], c_e),
+            new obstacle([lineV1b, lineH12b, lineH12c], c_f),
+            new obstacle([lineH1a, lineV12b, lineV12c], c_g),
+            new obstacle([lineH1b, lineV12b, lineV12c], c_h)
         ];
 
     }
@@ -193,6 +246,43 @@ define(['./constants'], function(Constants){
         return obs[rand].copy();
     }
 
+    function duplicateCorners(obsA, obsB){
+        var dupIndexA;
+        var dupIndexB;
+        var foundDup = false;
+        obsA.corners.forEach(function(cornerA, indexA, arrA){
+            obsB.corners.forEach(function(cornerB, indexB, arrB){
+                if(Math.abs(cornerA.x - cornerB.x) < 0.01
+                   && Math.abs(cornerA.y - cornerB.y) < 0.01){
+                    dupIndexA = indexA;
+                    dupIndexB = indexB;
+                    foundDup = true;
+                }
+            });
+        });
+        if(foundDup){
+            obsA.corners.splice(dupIndexA, 1);
+            obsB.corners.splice(dupIndexB, 1);
+        }
+    }
+
+    function removeAdjacentDuplicates(obsMap, i, j){
+        if(i > 0)
+            duplicateCorners(obsMap[i][j], obsMap[i-1][j]);
+        if(i < obsMap.length-1)
+            duplicateCorners(obsMap[i][j], obsMap[i+1][j]);
+        if(j > 0)
+            duplicateCorners(obsMap[i][j], obsMap[i][j-1]);
+        if(j < obsMap[i].length-1)
+            duplicateCorners(obsMap[i][j], obsMap[i][j+1]);
+    }
+
+    function removeAllDuplicateCorners(obsMap){
+        for(i = 0; i < obsMap.length; i++)
+            for(j = 0; j < obsMap[0].length; j++)
+                removeAdjacentDuplicates(obsMap, i, j);
+    }
+
     var obsMap = [];
     for(var i = 0; i < Constants.canvasHeight + Constants.gridSize; i+=Constants.gridSize){
         var newWall = [];
@@ -201,6 +291,9 @@ define(['./constants'], function(Constants){
         }
         obsMap.push(newWall);
     }
+    
+    removeAllDuplicateCorners(obsMap);
+    
 
     return {
         addLeft: function(){
@@ -210,6 +303,7 @@ define(['./constants'], function(Constants){
                 obsMap[i].unshift(getRandomObs().adjust(adjX, adjY));
                 obsMap[i].pop();
                 adjY += Constants.gridSize;
+                removeAdjacentDuplicates(obsMap, i, 0);
             }
         },
         addRight: function(){
@@ -220,6 +314,7 @@ define(['./constants'], function(Constants){
                 obsMap[i].push(getRandomObs().adjust(adjX, adjY));
                 obsMap[i].shift();
                 adjY += Constants.gridSize;
+                removeAdjacentDuplicates(obsMap, i, obsMap[0].length-1);
             }
         },
         addTop: function(){
@@ -232,6 +327,8 @@ define(['./constants'], function(Constants){
             }
             obsMap.unshift(newWall);
             obsMap.pop();
+            for(var i = 0; i < obsMap[0].length; i++)
+                removeAdjacentDuplicates(obsMap, 0, i);
         },
         addBottom: function(){
             var ylen = obsMap.length;
@@ -244,6 +341,13 @@ define(['./constants'], function(Constants){
             }
             obsMap.push(newWall);
             obsMap.shift();
+            for(var i = 0; i < obsMap[0].length; i++)
+                removeAdjacentDuplicates(obsMap, ylen-1, i);
+        },
+        getObstacles: function(){
+            return obsMap.reduce(function(arr, cur){
+                    return arr.concat(cur);
+                }, []);
         },
         getLines: function(){
             var lines = [];

@@ -4,23 +4,22 @@
  *  - mouseClick: fire bullet
  *  - update/render: update and render the game using specialized objects
  */
-define(['./constants', './mathStuff', './hash', './zombie'], function(Constants, Maths, Hash, Zombie){
+define(['./constants', './mathStuff', './hash', './zombie', './zombieAgent'], function(Constants, Maths, Hash, Zombie, ZombieAgent){
     var gameTimer = 0;
     var zombieHash = Hash;
     var killed = 0;
-    function updateZombie(z, worldMovement){
-        // move
-        if(z.x < Constants.canvasWidth/2+Constants.canvasWidth/8){
-            z.found = true;
-        }
-        if(z.found){
-            var xcomp = Constants.canvasWidth/2 - z.x;
-            var ycomp = Constants.canvasHeight/2 - z.y;
-            z.dx = Constants.zombieSpeed*xcomp*Maths.normalize(xcomp, ycomp);
-            z.dy = Constants.zombieSpeed*ycomp*Maths.normalize(xcomp, ycomp);
-        }
+    function updateZombie(z, worldMovement, obsArr, lines, zombies){
+        var px = Constants.canvasWidth/2;
+        var py = Constants.canvasHeight/2;
+        if(z.path.length < 2)
+            z.path = ZombieAgent.getPath(z, obsArr, lines);
+        ZombieAgent.setDirection(z);
         z.x += z.dx + worldMovement.dx;
         z.y += z.dy + worldMovement.dy;
+        for(i = z.path.length; i--; ){
+            z.path[i].x += worldMovement.dx;
+            z.path[i].y += worldMovement.dy;
+        }
     }
     function player(p, inserter){
         zombieHash.collideAll([p], function(p, arr){
@@ -32,7 +31,6 @@ define(['./constants', './mathStuff', './hash', './zombie'], function(Constants,
                 }
             });
             p = inserter.collidesAll([p], Constants.playerSize, function(pl){
-                console.log('player collision');
                 return pl;
             })[0];
         });
@@ -99,13 +97,14 @@ define(['./constants', './mathStuff', './hash', './zombie'], function(Constants,
 
         objinserter.adjust(obstaclemovement.dx, obstaclemovement.dy);
     }
-    function zombies(z, worldMovement){
+    function zombies(z, worldMovement, inserter){
         killed = 0;
         zombieHash.addAll(z);
+        var obsArr = inserter.getObstacles();
         if(Math.random() < Math.log(gameTimer)*Constants.spawnRate && z.length < Constants.maxZombies)
             z.push(new Zombie());
         z.forEach(function(v,i,arr){
-            updateZombie(v, worldMovement);
+            updateZombie(v, worldMovement, obsArr, inserter.getLines(), z);
             if(v.health <= 0)
                 killed++;
         });
@@ -141,11 +140,10 @@ define(['./constants', './mathStuff', './hash', './zombie'], function(Constants,
     return function(objs){
         document.getElementById("score").innerHTML = "Score: " + objs.score;
         document.getElementById("health").innerHTML = "Health: " + objs.player.health;
-        objs.zombies = zombies(objs.zombies, objs.worldMovement);
+        objs.zombies = zombies(objs.zombies, objs.worldMovement, objs.objInserter);
         objs.bullets = bullets(objs.bullets, objs.objInserter);
         objs.player = player(objs.player, objs.objInserter);
         var wallDir = objs.objInserter.getCollisionDirection(objs.player, Constants.playerSize);
-        console.log(wallDir);
         world(objs.worldMovement, objs.keyMap, wallDir);
         obstacles(objs.obstacleMovement, objs.objInserter, objs.keyMap, wallDir);
         wallFlag = false;
