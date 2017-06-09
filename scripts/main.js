@@ -12,8 +12,11 @@
 requirejs.config({
     baseUrl: 'scripts'
 });
-requirejs(['constants', 'game'], function(Constants, Game){
+requirejs(['constants', 'game', 'test'], function(Constants, Game, Test){
     function Main(){
+        // Test
+        Test();
+        
         // Interface variables
         var gameLoop;
         var gameObj = Game;

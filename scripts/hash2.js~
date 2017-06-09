@@ -1,0 +1,9 @@
+/*******************************************************************************
+ * Hash Constructor
+ */
+define(['./mathStuff'], function(Maths){
+    function _hash(hashFunction){
+        this.h = hashFunction;
+
+    }
+});

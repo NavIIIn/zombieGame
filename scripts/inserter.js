@@ -5,42 +5,17 @@
  *   - adjust: moves all obstacles x to the right and y down
  *   - collidesAll: returns array of fn operated on objs where collisions occur
  */
-define(['./constants'], function(Constants){
-    function point(x, y){
-        this.x = x;
-        this.y = y;
-        this.copy = function(){
-            return new point(this.x, this.y);
-        };
-    }
-    function line(p, q){
-        this.p = p;
-        this.q = q;
-        this.print = function(){
-            console.log('p : ( '+this.p.x+', '+this.p.y+' )');
-            console.log('q : ( '+this.q.x+', '+this.q.y+' )');
-        }
-        this.copy = function(){
-            return new line(this.p.copy(), this.q.copy());
-        };
-    }
-
+define(['./constants', './point', './line'], function(Constants, Point, Line){
     function obstacle(lines, corners){
         this.corners = corners; // edges that can be walked around
         this.lines = lines;
         this.x = 0;
         this.y = 0;
         this.adjust = function(x, y){
-            for(var i = 0; i < lines.length; i++){
-                this.lines[i].p.x += x;
-                this.lines[i].p.y += y;
-                this.lines[i].q.x += x;
-                this.lines[i].q.y += y;
-            }
-            for(i = 0; i < corners.length; i++){
-                corners[i].x += x;
-                corners[i].y += y;
-            }
+            for(var i = 0; i < lines.length; i++)
+                this.lines[i].adjust(x,y);
+            for(i = 0; i < corners.length; i++)
+                corners[i].adjust(x,y);
             this.x +=x;
             this.y +=y;
             return this;
@@ -49,17 +24,17 @@ define(['./constants'], function(Constants){
             var newLines = [];
             var newCorners = [];
             this.lines.forEach(function(v, i, arr){
-                newLines.push(v.copy());
+                newLines.push(Line.copy(v));
             });
             this.corners.forEach(function(v, i, arr){
-                newCorners.push(v.copy());
+                newCorners.push(Point.copy(v));
             });
             return new obstacle(newLines, newCorners);
         };
     }
     function adjustCorner(corner, movedir){
         var moveamt = Constants.zombieSize;
-        var result = new point(corner.x, corner.y);
+        var result = Point.Point(corner.x, corner.y);
         if(movedir.includes('n'))
             result.y -= moveamt;
         if(movedir.includes('s'))
@@ -81,53 +56,44 @@ define(['./constants'], function(Constants){
     function getObstacles(){
         var wallLength = Constants.gridSize/2;
 
-        var middle = new point(wallLength, wallLength);
-        var topEdge = new point(wallLength, 0);
-        var bottomEdge = new point(wallLength, wallLength*2);
-        var leftEdge = new point(0, wallLength);
-        var rightEdge = new point(wallLength*2, wallLength);
-        var topMid = new point(wallLength, wallLength/2);
-        var bottomMid = new point(wallLength, wallLength*3/2);
-        var leftMid = new point(wallLength/2, wallLength);
-        var rightMid = new point(wallLength*3/2, wallLength);
+        var middle = Point.Point(wallLength, wallLength);
+        var topEdge = Point.Point(wallLength, 0);
+        var bottomEdge = Point.Point(wallLength, wallLength*2);
+        var leftEdge = Point.Point(0, wallLength);
+        var rightEdge = Point.Point(wallLength*2, wallLength);
+        var topMid = Point.Point(wallLength, wallLength/2);
+        var bottomMid = Point.Point(wallLength, wallLength*3/2);
+        var leftMid = Point.Point(wallLength/2, wallLength);
+        var rightMid = Point.Point(wallLength*3/2, wallLength);
 
         // corners
-        var tl = new point(0, 0);
-        var tr = new point(wallLength*2, 0);
-        var bl = new point(0, wallLength*2);
-        var br = new point(wallLength*2, wallLength*2);
+        var tl = Point.Point(0, 0);
+        var tr = Point.Point(wallLength*2, 0);
+        var bl = Point.Point(0, wallLength*2);
+        var br = Point.Point(wallLength*2, wallLength*2);
 
         // lines spanning 2 wall lengths
-        var lineV2 = new line(topEdge, bottomEdge);
-        var lineH2 = new line(leftEdge, rightEdge);
+        var lineV2 = Line.Line(topEdge, bottomEdge);
+        var lineH2 = Line.Line(leftEdge, rightEdge);
         //  lines spanning 1 wall length
-        var lineV1a = new line(topEdge, middle);
-        var lineV1b = new line(middle, bottomEdge);
-        var lineH1a = new line(leftEdge, middle);
-        var lineH1b = new line(middle, rightEdge);
+        var lineV1a = Line.Line(topEdge, middle);
+        var lineV1b = Line.Line(middle, bottomEdge);
+        var lineH1a = Line.Line(leftEdge, middle);
+        var lineH1b = Line.Line(middle, rightEdge);
         // lines spanning half a wall length
-        var lineV12a = new line(topEdge, topMid);
-        var lineV12b = new line(topMid, middle);
-        var lineV12c = new line(middle, bottomMid);
-        var lineV12d = new line(bottomMid, bottomEdge);
-        var lineH12a = new line(leftEdge, leftMid);
-        var lineH12b = new line(leftMid, middle);
-        var lineH12c = new line(middle, rightMid);
-        var lineH12d = new line(rightMid, rightEdge);
+        var lineV12a = Line.Line(topEdge, topMid);
+        var lineV12b = Line.Line(topMid, middle);
+        var lineV12c = Line.Line(middle, bottomMid);
+        var lineV12d = Line.Line(bottomMid, bottomEdge);
+        var lineH12a = Line.Line(leftEdge, leftMid);
+        var lineH12b = Line.Line(leftMid, middle);
+        var lineH12c = Line.Line(middle, rightMid);
+        var lineH12d = Line.Line(rightMid, rightEdge);
         // lines spanning 3/2 a wall length
-        var lineV32a = new line(topEdge, bottomMid);
-        var lineV32b = new line(topMid, bottomEdge);
-        var lineH32a = new line(leftEdge, rightMid);
-        var lineH32b = new line(leftMid, rightEdge);
-
-        //var c_a = adjustCorners([topEdge, topEdge, bottomMid], ['n', 's', 's']);
-        //var c_b = adjustCorners([topMid, bottomEdge, bottomEdge], ['n', 'n', 's']);
-        //var c_c = adjustCorners([leftEdge, leftEdge, rightMid], ['w', 'e', 'e']);
-        //var c_d = adjustCorners([leftMid, rightEdge, rightEdge], ['w', 'e', 'w']);
-        //var c_e = adjustCorners([topEdge, topEdge, leftMid, rightMid], ['n', 's', 'w', 'e']);
-        //var c_f = adjustCorners([bottomEdge, bottomEdge, leftMid, rightMid], ['n', 's', 'w', 'e']);
-        //var c_g = adjustCorners([leftEdge, leftEdge, topMid, bottomMid], ['w', 'e', 'n', 's']);
-        //var c_h = adjustCorners([rightEdge, rightEdge, topMid, bottomMid], ['w', 'e', 'n', 's']);
+        var lineV32a = Line.Line(topEdge, bottomMid);
+        var lineV32b = Line.Line(topMid, bottomEdge);
+        var lineH32a = Line.Line(leftEdge, rightMid);
+        var lineH32b = Line.Line(leftMid, rightEdge);
 
         var c_a = adjustCorners([topEdge, topEdge, bottomMid, bottomMid], ['nw', 'ne', 'sw', 'se']);
         var c_b = adjustCorners([topMid, topMid, bottomEdge, bottomEdge], ['nw', 'ne', 'sw', 'se']);
@@ -139,14 +105,6 @@ define(['./constants'], function(Constants){
         var c_h = adjustCorners([rightEdge, rightEdge, topMid, topMid, bottomMid, bottomMid], ['ne', 'se', 'nw', 'ne', 'sw', 'se']);
 
         allCorners = [tl, tr, bl, br];
-        //c_a = c_a.concat(allCorners);
-        //c_b = c_b.concat(allCorners);
-        //c_c = c_c.concat(allCorners);
-        //c_d = c_d.concat(allCorners);
-        //c_e = c_e.concat(allCorners);
-        //c_f = c_f.concat(allCorners);
-        //c_g = c_g.concat(allCorners);
-        //c_h = c_h.concat(allCorners);
 
         // used for reference do not alter
         return [
