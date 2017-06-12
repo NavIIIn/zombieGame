@@ -4,8 +4,7 @@
  *  - mouseClick: fire bullet
  *  - update/render: update and render the game using specialized objects
  */
-define(['./inserter', './player', './bullet', './updater', './renderer', './thetaTest'], function(Inserter, Player, Bullet, Updater, Renderer, ThetaTest){
-    ThetaTest();
+define(['./inserter', './player', './bullet', './updater', './renderer'], function(Inserter, Player, Bullet, Updater, Renderer){
     var objs = {
         keyMap: [false, false, false, false],
         player: new Player(),

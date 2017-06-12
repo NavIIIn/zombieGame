@@ -1,0 +1,6 @@
+/*******************************************************************************
+ * Point aggregate
+ */
+define(['./constants', './point'], function(Point){
+    function 
+});

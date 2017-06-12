@@ -1,0 +1,32 @@
+/*******************************************************************************
+ * Obstacle Object
+ */
+define([], function(){
+    function Obstacle(lines, corners){
+        this.corners = corners; // edges that can be walked around
+        this.lines = lines;
+        this.x = 0;
+        this.y = 0;
+    }
+    Obstacle.prototype.adjust = function(dx, dy){
+            for(var i = 0; i < this.lines.length; i++)
+                this.lines[i].adjust(dx,dy);
+            for(i = 0; i < this.corners.length; i++)
+                this.corners[i].adjust(dx,dy);
+            this.x += dx;
+            this.y += dy;
+            return this;
+    };
+    Obstacle.prototype.copy = function(){
+        var newLines = [];
+        var newCorners = [];
+        this.lines.forEach(function(v, i, arr){
+            newLines.push(v.copy());
+        });
+        this.corners.forEach(function(v, i, arr){
+            newCorners.push(v.copy());
+        });
+        return new Obstacle(newLines, newCorners);
+    };
+    return Obstacle;
+});

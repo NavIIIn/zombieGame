@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Zombie Agent
  */
-define(['./constants', './mathStuff', './theta'], function(Constants, Maths, Theta){
+define(['./constants', './mathStuff', './point', './theta'], function(Constants, Maths, Point, Theta){
     var px = Constants.canvasWidth/2;
     var py = Constants.canvasHeight/2;
     function extend(line){
@@ -28,30 +28,6 @@ define(['./constants', './mathStuff', './theta'], function(Constants, Maths, The
         }
         return extLine;
     }
-    //function getImpedingWalls(walls, zx, zy){
-    //    // return an array of walls that intersect the line from (zx, zy)
-    //    // to the player location
-    //    var p = {x: zx, y: zy};
-    //    var q = {x: Constants.canvasWidth/2, y: Constants.canvasHeight/2};
-    //    return walls.filter(function(l){
-    //        return Maths.intersects(p, q, l.p, l.q);
-    //    });
-    //};
-    //function getClosestPoint(walls, zx, zy){
-    //    // return the point on the edge of a wall closes to (zx, xy)
-    //    if(walls.length == 0)
-    //        return {x: Constants.canvasWidth/2, y: Constants.canvasHeight/2};
-
-    //    return walls.reduce(function(min, cur){
-    //        var extCur = extend(cur);
-    //        var minDist = Maths.distance(zx, zy, min.x, min.y);
-    //        var pDist = Maths.distance(zx, zy, extCur.p.x, extCur.p.y);
-    //        var qDist = Maths.distance(zx, zy, extCur.q.x, extCur.q.y);
-    //        var curDist = pDist < qDist ? pDist : qDist;
-    //        var curPoint= pDist < qDist ? extCur.p : extCur.q;
-    //        return minDist < curDist ? min : curPoint;
-    //    }, {x: Infinity, y: Infinity});
-    //};
 
     function getImpedingObs(obs, zx, zy){
         var zLocation = {x: zx, y: zy};
@@ -106,7 +82,7 @@ define(['./constants', './mathStuff', './theta'], function(Constants, Maths, The
             z.dy = direction.dy;
         },
         getPath: function(z, obs, lines){
-            return Theta({x:z.x, y:z.y}, {x:px, y:py}, getAllCorners(obs), lines);
+            return Theta(new Point(z.x, z.y), new Point(px, py), getAllCorners(obs), lines);
         },
         setDirection: function(z){
             if(z.path.length <= 1)
