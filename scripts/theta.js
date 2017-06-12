@@ -1,45 +1,53 @@
 /*******************************************************************************
  * Theta* Search
  */
-define(['./mathStuff', './point', './priorityQueue'], function(Maths, Point, PriorityQueue){
+define(['./geometry', './point', './priorityQueue'], function(Geometry, Point, PriorityQueue){
     return function (start, goal, nodes, lines){
         var open_p = new PriorityQueue();
         var closed;
         
         // weighted heuristic
         function h(s, g){
-            return g + 1.2*Point.distance(s, goal);
+            return g + 1.2*s.distance(goal);
         }
         function los(a, b){
             return !lines.some(function(l){
-                return Maths.intersects(a, b, l.p, l.q);
+                return Geometry.intersects(a, b, l.p, l.q);
             });
         }
         function neighbor(s){
-            var a = {x:s.x, y:s.y};
-            return nodes.filter(function(b){return los(a, b) && !Point.isNear(a,b);});
+            var a = new Point(s.x, s.y);
+            return nodes.filter(function(b){return los(a, b) && !a.isNear(b);});
         }
         function setVertex(s){
             if(!los(s, s.p)){
                 var nghbr = neighbor(s);
                 var pNghbr = neighbor(s.p);
                 var mutualNghbrs = nghbr.filter(function(a){
+                    //return pNghbr.some(function(v){return a.isNear(v);}) &&
+                        //closed.some(function(v){return a.isNear(v);});
                     return pNghbr.includes(a) && closed.includes(a);
                 });
-                var parent = mutualNghbrs.reduce(function(a, b){
-                    if (a.g + Point.distance(s, a) < b.g + Point.distance(s, b))
-                        return a;
-                    else
-                        return b;
-                });
+                var parent = s.p;
+                if (mutualNghbrs.length == 0)
+                    console.log('no mutual neighbors');
+                else if(mutualNghbrs.length == 1)
+                    parent = mutualNghbrs[0];
+                else{
+                    parent = mutualNghbrs.reduce(function(a, b){
+                        if (a.g + s.distance(a) < b.g + s.distance(b))
+                            return a;
+                        else
+                            return b;
+                    });}
                 s.p = parent;
-                s.g = parent.g + Point.distance(s, parent);
+                s.g = parent.g + s.distance(parent);
             }
         }
         function computeCost(a, b){
-            if(a.p.g + Point.distance(a.p, b) < b.g){
+            if(a.p.g + b.distance(a.p) < b.g){
                 b.p = a.p;
-                b.g = a.p.g + Point.distance(a.p, b);
+                b.g = a.p.g + b.distance(a.p);
             }
         }
         function updateVertex(a, b){
@@ -53,8 +61,8 @@ define(['./mathStuff', './point', './priorityQueue'], function(Maths, Point, Pri
         }
         function path(start, end){
             var p_nodes = [];
-            while(!Point.isNear(start, end)){
-                p_nodes.unshift({x:end.x, y:end.y});
+            while(!start.isNear(end)){
+                p_nodes.unshift(new Point(end.x, end.y));
                 end = end.p;
             }
             return p_nodes;
@@ -65,11 +73,12 @@ define(['./mathStuff', './point', './priorityQueue'], function(Maths, Point, Pri
             var nghbrs = [];
             start.g = 0;
             start.p = start;
+            start.p.p = start;
             open_p.push(start, h(start, 0));
             while(!open_p.empty()){
                 cur = open_p.pop();
                 setVertex(cur);
-                if(Point.isNear(cur, goal)){
+                if(cur.isNear(goal)){
                     return path(start, cur);
                 }
                 closed.push(cur);

@@ -12,10 +12,10 @@
 requirejs.config({
     baseUrl: 'scripts'
 });
-requirejs(['constants', 'game', 'test'], function(Constants, Game, Test){
+requirejs(['constants', 'game'], function(Constants, Game){
     function Main(){
         // Test
-        Test();
+        // outdated Test();
         
         // Interface variables
         var gameLoop;
