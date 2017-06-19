@@ -4,33 +4,28 @@
  *  - mouseClick: fire bullet
  *  - update/render: update and render the game using specialized objects
  */
-define(['./constants', './geometry', './hash', './zombie', './zombieAgent'], function(Constants, Geometry, Hash, Zombie, ZombieAgent){
-    var gameTimer = 0;
-    var zombieHash = Hash;
+define(['./constants', './zombie', './zombieAgent'], function(Constants, Zombie, ZombieAgent){
     var killed = 0;
-    function player(p, inserter){
-        return p;
-    }
-    function world(worldMovement, keyMap, dir, obsMap){
+    function world(worldMovement, obsMap){
         worldMovement.copySpeed(obsMap);
         worldMovement.move();
     }
-    function obstacles(obstaclemovement, objinserter, keyMap, dir, player){
-        objinserter.move(keyMap, player);
-        objinserter.addWall();
+    function obstacles(obsMap, keyMap, player){
+        obsMap.move(keyMap, player);
+        obsMap.addWall();
     }
-    function zombies(zombies, worldMovement, inserter, bullets, player){
+    function zombies(zombies, worldMovement, obsMap, bullets, player){
         zombies.updateHash();
         zombies.add();
-        killed = zombies.update(worldMovement, inserter);
+        killed = zombies.update(worldMovement, obsMap);
         zombies.remove();
         bullets.arr.forEach(function(v){zombies.collide(v, Constants.zombieSize + Constants.bulletSize)});
         zombies.collide(player, Constants.zombieSize+Constants.playerSize);
         return zombies;
     }
-    function bullets(b, inserter, world){
+    function bullets(b, obsMap, world){
         b.move(world);
-        b.remove(inserter);
+        b.remove(obsMap);
         return b;
     }
     return function(objs){
@@ -38,12 +33,8 @@ define(['./constants', './geometry', './hash', './zombie', './zombieAgent'], fun
         document.getElementById("health").innerHTML = "Health: " + objs.player.health;
         objs.zombies = zombies(objs.zombies, objs.worldMovement, objs.obsMap, objs.bullets, objs.player);
         objs.bullets = bullets(objs.bullets, objs.obsMap, objs.worldMovement);
-        objs.player = player(objs.player, objs.obsMap);
-        var wallDir = objs.obsMap.getCollisionDirection(objs.player, Constants.playerSize);
-        world(objs.worldMovement, objs.keyMap, wallDir, objs.obsMap);
-        obstacles(objs.obstacleMovement, objs.obsMap, objs.keyMap, wallDir, objs.player);
-        wallFlag = false;
-        gameTimer++;
+        world(objs.worldMovement, objs.obsMap);
+        obstacles(objs.obsMap, objs.keyMap, objs.player);
         objs.shotCounter--;
         objs.score += killed;
 

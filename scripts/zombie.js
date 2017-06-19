@@ -14,6 +14,7 @@ define(['./constants', './livePoint', './geometry'], function(Constants, LivePoi
                        Constants.zombieHealth, Constants.zombieDamage, 0, 0);
         this.found    = false;
         this.path     = [];
+        this.counter  = 20;
     }
     Zombie.prototype = Object.create(LivePoint.prototype);
     Zombie.prototype.inBounds = function(){

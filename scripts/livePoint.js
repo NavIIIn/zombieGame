@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Live Point Constructor
  */
-define(['./constants', './point', './mathStuff'], function(Constants, Point, Maths){
+define(['./constants', './point'], function(Constants, Point){
     function LivePoint(x, y, health, damage, dx, dy){
         Point.call(this, x, y);
         this.health = health;

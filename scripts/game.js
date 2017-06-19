@@ -4,7 +4,7 @@
  *  - mouseClick: fire bullet
  *  - update/render: update and render the game using specialized objects
  */
-define(['./keyMap', './obstacleMap', './world', './player', './bulletList', './zombieList', './spacialHash', './updater', './renderer'], function(KeyMap, ObstacleMap, World, Player, BulletList, ZombieList, SpacialHash, Updater, Renderer){
+define(['./keyMap', './obstacleMap', './world', './player', './bulletList', './zombieList', './updater', './renderer'], function(KeyMap, ObstacleMap, World, Player, BulletList, ZombieList, Updater, Renderer){
     var objs = {
         keyMap: new KeyMap(),
         player: new Player(),
@@ -15,7 +15,6 @@ define(['./keyMap', './obstacleMap', './world', './player', './bulletList', './z
         shotCounter: 0,
         score: 0
     };
-    SpacialHash();
     return {
         arrowDown: function(e){
             objs.keyMap.arrowDown(e);

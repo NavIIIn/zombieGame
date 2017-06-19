@@ -16,14 +16,16 @@ define(['./constants', './spacialHash', './zombie', './zombieAgent'], function(C
     ZombieList.prototype.update = function(worldMovement, inserter){
         var killed = 0;
         for(var i = this.arr.length; i--;){
-            var z = this.arr[i];
-            // agent
-            if(this.arr[i].path.length < 2)
-                this.arr[i].path = ZombieAgent.getPath(z, inserter.getCorners(), inserter.getLines());
-            ZombieAgent.setDirection(this.arr[i]);
-            this.arr[i].adjustWorld(worldMovement.dx, worldMovement.dy);
-            this.arr[i].move();
-            if(this.arr[i].dead())
+            var cur = this.arr[i];
+            if(cur.path.length < 4 && cur.counter > 20){
+                cur.path = ZombieAgent.getPath(cur, inserter.getCorners(), inserter.getLines());
+                cur.counter = 0;
+            }
+            cur.counter++;
+            ZombieAgent.setDirection(cur);
+            cur.adjustWorld(worldMovement.dx, worldMovement.dy);
+            cur.move();
+            if(cur.dead())
                 killed++;
         }
         return killed;

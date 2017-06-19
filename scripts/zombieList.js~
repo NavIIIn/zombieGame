@@ -1,7 +1,0 @@
-/*******************************************************************************
- * BulletList Object
- */
-define(['./spacialHash'], function(SpacialHash){
-    function ZombieList(){
-        this.arr = new SpacialHash();
-});

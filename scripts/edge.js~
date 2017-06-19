@@ -1,8 +1,0 @@
-/*******************************************************************************
- * Edge Object
- */
-define(['./constants', './point', './line', './obstacle'], function(Constants, Point, Line, Obstacle){
-    function Edge(x, y, dir){
-        Point.call(this, x, y, dir)
-    }
-});
