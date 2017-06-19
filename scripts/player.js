@@ -1,13 +1,11 @@
 /*******************************************************************************
  * Player Constructor
  */
-define(['./constants'], function(Constants){
-    return function(){
-        this.health = Constants.playerHealth;
-        this.damage = Constants.meleeDamage;
-        this.x      = Constants.canvasWidth/2;
-        this.y      = Constants.canvasHeight/2;
-        this.dx     = 0;
-        this.dy     = 0;
+define(['./constants', './livePoint'], function(Constants, LivePoint){
+    function Player(){
+        LivePoint.call(this, Constants.canvasWidth/2, Constants.canvasHeight/2,
+                   Constants.playerHealth, Constants.meleeDamage, 0, 0);
     }
+    Player.prototype = Object.create(LivePoint.prototype);
+    return Player;
 });

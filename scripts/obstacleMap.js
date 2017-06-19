@@ -1,11 +1,15 @@
 /*******************************************************************************
  * Obstacle Map
  */
-define(['./constants', './obstacleFactory'], function(Constants, ObstacleFactory){
+define(['./constants', './geometry', './obstacleFactory'], function(Constants, Geometry, ObstacleFactory){
     var gridSize = Constants.gridSize;
     var obsFactory = new ObstacleFactory();
     function ObstacleMap(){
         this.arr = [];
+        this.x = 0;
+        this.y = 0;
+        this.dx = 0;
+        this.dy = 0;
         var newWall;
         var totalHeight = Constants.canvasHeight + gridSize;
         var totalWidth = Constants.canvasWidth + gridSize;
@@ -66,6 +70,24 @@ define(['./constants', './obstacleFactory'], function(Constants, ObstacleFactory
         for(var i = 0; i < this.arr[0].length; i++)
             this.removeAdjacentDuplicates(ylen-1, i);
     };
+    ObstacleMap.prototype.addWall = function(){
+        if(this.x > 0){
+            this.x -= Constants.gridSize;
+            this.addLeft();
+        }
+        else if(this.x <= -Constants.gridSize){
+            this.x += Constants.gridSize;
+            this.addRight();
+        }
+        else if(this.y > 0){
+            this.y -= Constants.gridSize;
+            this.addTop();
+        }
+        else if(this.y <= -Constants.gridSize){
+            this.y += Constants.gridSize;
+            this.addBottom();
+        }
+    };
     ObstacleMap.prototype.getObstacles = function(){
         return this.arr.reduce(function(arr, cur){
             return arr.concat(cur);
@@ -122,6 +144,20 @@ define(['./constants', './obstacleFactory'], function(Constants, ObstacleFactory
             return acc || cur.collides(obj, size);
         }, false);
     };
+    ObstacleMap.prototype.move = function(keyMap, player){
+        var dir = this.getCollisionDirection(player, Constants.playerSize);
+        var raw_x = keyMap.getHorizontalDir();
+        var raw_y = keyMap.getVerticalDir();
+        this.dx = Geometry.normalizeX(raw_x, raw_y, Constants.playerSpeed);
+        this.dy = Geometry.normalizeY(raw_x, raw_y, Constants.playerSpeed);
+        if((dir.right && this.dx < 0) || (dir.left && this.dx > 0))
+            this.dx = 0;
+        if((dir.top && this.dy > 0) || (dir.bottom && this.dy < 0))
+            this.dy = 0;
+        this.x += this.dx;
+        this.y += this.dy;
+        this.adjust(this.dx, this.dy);
+    };
     function corner(ln, obj){
         var lr = ln.p.x > obj.x && ln.q.x > obj.x
             || ln.p.x < obj.x && ln.q.x < obj.x;
@@ -153,6 +189,11 @@ define(['./constants', './obstacleFactory'], function(Constants, ObstacleFactory
                     !corner(cur, obj);
             })
         };
+    };
+    ObstacleMap.prototype.lineOfSight = function(p1, p2){
+        return !this.getLines().some(function(v){
+            return v.intersects(p1, p2);
+        });
     };
     return ObstacleMap;
 });

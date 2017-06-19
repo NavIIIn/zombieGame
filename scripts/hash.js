@@ -3,7 +3,7 @@
  *   - addAll: places objects into table
  *   - collideAll: Checks arr for collisions and responds with fun
  */
-define(['./mathStuff'], function(Maths){
+define(['./constants', './mathStuff', './spacialHash'], function(Constants, Maths, SpacialHash){
     var values = [];
     var addGrid = function(x,y,o){
         if(typeof values[x] == 'undefined'){
@@ -34,16 +34,25 @@ define(['./mathStuff'], function(Maths){
             return [];
     };
     return {
+        spHash: new SpacialHash(),
         addAll: function(arr){
-            values = [];
-            if(arr.length > 0)
-                for(var i = 0; i < arr.length; i++)
-                    add(arr[i]);
+            spHash = new SpacialHash(arr);
+            //values = [];
+            //if(arr.length > 0)
+                //for(var i = 0; i < arr.length; i++)
+                    //add(arr[i]);
         },
         collideAll: function(arr, fun){
+            //var collided = spHash.getCollidingItems(arr[i], Constants.zombieSize+Constants.bulletSize);
             if(arr.length > 0)
-                for(var i = 0; i < arr.length; i++)
-                    fun(arr[i], collidesWith(arr[i]));
+                for(var i = 0; i < arr.length; i++){
+                    var collided = this.spHash.getCollidingItems(arr[i], Constants.zombieSize+Constants.bulletSize);
+                    fun(arr[i], collided);
+                }
+            
+            //if(arr.length > 0)
+                //for(var i = 0; i < arr.length; i++)
+                    //fun(arr[i], collidesWith(arr[i]));
         }
     };
 });

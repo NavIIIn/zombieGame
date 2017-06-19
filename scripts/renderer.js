@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Renderer Constructor
  */
-define(['./constants', './mathStuff'], function(Constants, Maths){
+define(['./constants'], function(Constants){
     var canvas = document.getElementById('gameStage');
     var ctx = canvas.getContext("2d");
     var bg = new Image();
@@ -12,14 +12,14 @@ define(['./constants', './mathStuff'], function(Constants, Maths){
         ctx.fill();
     }
     function bullets(b){
-        b.forEach(function(v, i, arr){
+        b.each(function(v, i, arr){
             ctx.beginPath();
             ctx.arc(v.x,v.y,Constants.bulletSize,0,2*Math.PI);
             ctx.fill();
         });
     }
     function zombies(z){
-        z.forEach(function(v, i, arr){
+        z.arr.forEach(function(v, i, arr){
             ctx.beginPath();
             ctx.arc(v.x,v.y,Constants.zombieSize,0,2*Math.PI);
             ctx.fillStyle = '#105F10';
@@ -32,7 +32,7 @@ define(['./constants', './mathStuff'], function(Constants, Maths){
         ctx.drawImage(bg,worldMovement.x,worldMovement.y);
         ctx.closePath();
     }
-    function obstacles(obstaclemovement, objinserter){
+    function obstacles(objinserter){
         objinserter.getLines().forEach(function(v, i, arr){
             ctx.beginPath();
             ctx.lineWidth = Constants.wallWidth;
@@ -41,6 +41,16 @@ define(['./constants', './mathStuff'], function(Constants, Maths){
             ctx.stroke();
             ctx.lineWidth = 1;
         });
+        //objinserter.getEdges().forEach(function(v){
+            //ctx.beginPath();
+            //ctx.arc(v.x,v.y,3,0,2*Math.PI);
+            //ctx.fill();
+        //});
+        //objinserter.getCorners().forEach(function(v){
+            //ctx.beginPath();
+            //ctx.arc(v.x,v.y,3,0,2*Math.PI);
+            //ctx.fill();
+        //});
     }
     return function(objs){
         ctx.clearRect(0,0,Constants.canvasWidth,Constants.canvasHeight);
@@ -48,6 +58,6 @@ define(['./constants', './mathStuff'], function(Constants, Maths){
         zombies(objs.zombies);
         bullets(objs.bullets);
         player(objs.player);
-        obstacles(objs.obstacleMovement, objs.objInserter)
+        obstacles(objs.obsMap)
     }
 });

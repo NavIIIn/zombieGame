@@ -4,7 +4,7 @@
 define(['./geometry', './point', './priorityQueue'], function(Geometry, Point, PriorityQueue){
     return function (start, goal, nodes, lines){
         var open_p = new PriorityQueue();
-        var closed;
+        var closed = [];
         
         // weighted heuristic
         function h(s, g){
@@ -24,8 +24,6 @@ define(['./geometry', './point', './priorityQueue'], function(Geometry, Point, P
                 var nghbr = neighbor(s);
                 var pNghbr = neighbor(s.p);
                 var mutualNghbrs = nghbr.filter(function(a){
-                    //return pNghbr.some(function(v){return a.isNear(v);}) &&
-                        //closed.some(function(v){return a.isNear(v);});
                     return pNghbr.includes(a) && closed.includes(a);
                 });
                 var parent = s.p;
@@ -68,7 +66,6 @@ define(['./geometry', './point', './priorityQueue'], function(Geometry, Point, P
             return p_nodes;
         }
         function main(start, goal){
-            closed = [];
             var cur;
             var nghbrs = [];
             start.g = 0;

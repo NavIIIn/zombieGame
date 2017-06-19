@@ -1,0 +1,14 @@
+/*******************************************************************************
+ * Live Point Constructor
+ */
+define(['./constants', './point', './mathStuff'], function(Constants, Point, Maths){
+    function LivePoint(x, y, health, damage, dx, dy){
+        Point.call(this, x, y);
+        this.health = health;
+        this.damage = damage;
+        this.dx = dx;
+        this.dy = dy;
+    }
+    LivePoint.prototype = Object.create(Point.prototype);
+    return LivePoint;
+});
