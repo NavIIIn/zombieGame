@@ -9,7 +9,7 @@ define(['./keyMap', './obstacleMap', './world', './player', './bulletList', './z
         keyMap: new KeyMap(),
         player: new Player(),
         bullets: new BulletList(),
-        zombies: new ZombieList(), //[],
+        zombies: new ZombieList(),
         worldMovement: new World(),
         obsMap: new ObstacleMap(),
         shotCounter: 0,

@@ -2,7 +2,7 @@
  * Theta* Search
  */
 define(['./geometry', './point', './priorityQueue'], function(Geometry, Point, PriorityQueue){
-    return function (start, goal, nodes, lines){
+    return function (start, goal, nodes){
         var open_p = new PriorityQueue();
         var closed = [];
         
@@ -10,22 +10,9 @@ define(['./geometry', './point', './priorityQueue'], function(Geometry, Point, P
         function h(s, g){
             return g + 1.2*s.distance(goal);
         }
-        function los(a, b){
-            return !lines.some(function(l){
-                return Geometry.intersects(a, b, l.p, l.q);
-            });
-        }
-        function neighbor(s){
-            var a = new Point(s.x, s.y);
-            return nodes.filter(function(b){return los(a, b) && !a.isNear(b);});
-        }
         function setVertex(s){
-            if(!los(s, s.p)){
-                var nghbr = neighbor(s);
-                var pNghbr = neighbor(s.p);
-                var mutualNghbrs = nghbr.filter(function(a){
-                    return pNghbr.includes(a) && closed.includes(a);
-                });
+            if(!nodes.lineOfSight(s, s.p)){
+                var mutualNghbrs = nodes.getMutualNeighbors(s, s.p, closed);
                 var parent = s.p;
                 if (mutualNghbrs.length == 0)
                     console.log('no mutual neighbors');
@@ -42,19 +29,19 @@ define(['./geometry', './point', './priorityQueue'], function(Geometry, Point, P
                 s.g = parent.g + s.distance(parent);
             }
         }
-        function computeCost(a, b){
-            if(a.p.g + b.distance(a.p) < b.g){
-                b.p = a.p;
-                b.g = a.p.g + b.distance(a.p);
+        function computeCost(pt1, pt2){
+            if(pt1.p.g + pt2.distance(pt1.p) < pt2.g){
+                pt2.p = pt1.p;
+                pt2.g = pt1.p.g + pt2.distance(pt1.p);
             }
         }
-        function updateVertex(a, b){
-            var oldg = b.g;
-            computeCost(a, b);
-            if( b.g < oldg ){
-                if(open_p.includes(b))
-                    open_p.remove(b);
-                open_p.push(b, h(b, b.g));
+        function updateVertex(pt1, pt2){
+            var oldg = pt2.g;
+            computeCost(pt1, pt2);
+            if( pt2.g < oldg ){
+                if(open_p.includes(pt2))
+                    open_p.remove(pt2);
+                open_p.push(pt2, h(pt2, pt2.g));
             }
         }
         function path(start, end){
@@ -79,7 +66,7 @@ define(['./geometry', './point', './priorityQueue'], function(Geometry, Point, P
                     return path(start, cur);
                 }
                 closed.push(cur);
-                nghbrs = neighbor(cur);
+                nghbrs = nodes.getNeighbors(cur);
                 for(var i = nghbrs.length; i--; ){
                     if(!closed.includes(nghbrs[i])){
                         if(!open_p.includes(nghbrs[i])){

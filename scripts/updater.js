@@ -4,7 +4,7 @@
  *  - mouseClick: fire bullet
  *  - update/render: update and render the game using specialized objects
  */
-define(['./constants', './zombie', './zombieAgent'], function(Constants, Zombie, ZombieAgent){
+define(['./constants', './zombie'], function(Constants, Zombie){
     var killed = 0;
     function world(worldMovement, obsMap){
         worldMovement.copySpeed(obsMap);
@@ -14,7 +14,7 @@ define(['./constants', './zombie', './zombieAgent'], function(Constants, Zombie,
         obsMap.move(keyMap, player);
         obsMap.addWall();
     }
-    function zombies(zombies, worldMovement, obsMap, bullets, player){
+    function updateZombies(zombies, worldMovement, obsMap, bullets, player){
         zombies.updateHash();
         zombies.add();
         killed = zombies.update(worldMovement, obsMap);
@@ -23,16 +23,16 @@ define(['./constants', './zombie', './zombieAgent'], function(Constants, Zombie,
         zombies.collide(player, Constants.zombieSize+Constants.playerSize);
         return zombies;
     }
-    function bullets(b, obsMap, world){
-        b.move(world);
-        b.remove(obsMap);
-        return b;
+    function updateBullets(bullets, obsMap, world){
+        bullets.move(world);
+        bullets.remove(obsMap);
+        return bullets;
     }
     return function(objs){
         document.getElementById("score").innerHTML = "Score: " + objs.score;
         document.getElementById("health").innerHTML = "Health: " + objs.player.health;
-        objs.zombies = zombies(objs.zombies, objs.worldMovement, objs.obsMap, objs.bullets, objs.player);
-        objs.bullets = bullets(objs.bullets, objs.obsMap, objs.worldMovement);
+        objs.zombies = updateZombies(objs.zombies, objs.worldMovement, objs.obsMap, objs.bullets, objs.player);
+        objs.bullets = updateBullets(objs.bullets, objs.obsMap, objs.worldMovement);
         world(objs.worldMovement, objs.obsMap);
         obstacles(objs.obsMap, objs.keyMap, objs.player);
         objs.shotCounter--;
