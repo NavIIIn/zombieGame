@@ -14,6 +14,9 @@ requirejs.config({
 });
 requirejs(['constants', 'game'], function(Constants, Game){
     function Main(){
+        // Test
+        // outdated Test();
+        
         // Interface variables
         var gameLoop;
         var gameObj = Game;
