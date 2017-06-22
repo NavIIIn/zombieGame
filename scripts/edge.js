@@ -5,7 +5,7 @@ define(['./constants', './point', './line', './obstacle'], function(Constants, P
     function Edge(pt, dir){
         Point.call(this, pt.x, pt.y, dir);
         this.dir = dir;
-        var moveAmt = Constants.nearVal;
+        var moveAmt = Constants.zombieSize;
         if(dir == 'up'){
             this.corners = [new Point(pt.x+moveAmt, pt.y-moveAmt),
                             new Point(pt.x-moveAmt, pt.y-moveAmt)];

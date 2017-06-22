@@ -4,7 +4,6 @@
 define([], function(){
     function Obstacle(lines, edges){
         this.edges = edges;
-        this.corners = this.getCorners();
         this.lines = lines;
         this.x = 0;
         this.y = 0;
@@ -51,7 +50,6 @@ define([], function(){
             this.edges.splice(dupIndexA, 1);
             other.edges.splice(dupIndexB, 1);
         }
-        this.corners = this.getCorners();
     };
     Obstacle.prototype.collides = function(obj, size){
         return this.lines.reduce(function(acc, cur){

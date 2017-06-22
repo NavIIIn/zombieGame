@@ -22,5 +22,6 @@ define({
     spawnRate     :  1/500,
     maxZombies    :  40,
     wallWidth     :  4,
-    nearVal       :  4
+    nearVal       :  4,
+    hashRefresh   :  10
 });

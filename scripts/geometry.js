@@ -14,6 +14,12 @@ define([], function(){
         else
             return Math.sqrt(1/(Math.pow(x,2)+Math.pow(y,2)));
     }
+    function _normalizeX(x, y, speed){
+        return speed*x*_normalize(x, y);
+    }
+    function _normalizeY(x, y, speed){
+        return speed*y*_normalize(x, y);
+    }
     function _distance(x1, y1, x2, y2){
         return Math.sqrt(Math.pow(x1-x2,2)+Math.pow(y1-y2,2));
     }
@@ -40,7 +46,8 @@ define([], function(){
     }
     return {
         flipCoin: _flipCoin,
-        normalize: _normalize,
+        normalizeX: _normalizeX,
+        normalizeY: _normalizeY,
         distance: _distance,
         intersects: _intersects
     };

@@ -26,11 +26,5 @@ define(['./constants', './geometry'], function(Constants, Geometry){
         this.x += dx;
         this.y += dy;
     };
-    // possibly move to some wall object
-    function _lineOfSight(a, b, walls){
-            return !walls.some(function(w){
-                return Geometry.intersects(a, b, w.p, w.q);
-            });
-    }
     return Point;
 });

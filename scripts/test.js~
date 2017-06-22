@@ -1,8 +1,0 @@
-/*******************************************************************************
- * Test object
- */
-define(['./geometry'], function(Geometry){
-    function _geometry(){
-
-    }
-});
