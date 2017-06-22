@@ -1,5 +1,0 @@
-/*******************************************************************************
- * Node Constructor
- */
-define(['./constants', './point', './Geometry'], function(Constants, Point, Geometry){
-});
