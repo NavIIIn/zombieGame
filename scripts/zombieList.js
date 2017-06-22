@@ -9,7 +9,6 @@ define(['./constants', './spacialHash', './zombie', './theta', './point', './nod
     }
     ZombieList.prototype.getRandomSpeed = function(){
         var speed = Math.random()*Math.log(this.timer/100);
-        console.log(speed);
         if(speed < 1)
             speed = 1;
         if(speed > Constants.zombieSpeed)

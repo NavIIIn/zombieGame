@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <title>Zombie Game</title>
+    <script data-main="scripts/main.js" src="scripts/main-built.js"></script>
+  </head>
+  <body id="doc">
+    <h1 id="header" align="center">Zombie Game</h1>
+    <canvas id="gameStage" width="800" height="600" style="border:1px solid #000000;">
+      Your browser does not support the HTML5 canvas tag.
+    </canvas>
+    <p id="health" align="center">Heatlh: 80</p>
+    <p id="score" align="center">Score: 0</p>
+    <input type="button" value="Start" id="start"/>
+  </body>
+</html>
