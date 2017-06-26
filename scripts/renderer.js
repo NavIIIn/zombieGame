@@ -43,6 +43,8 @@ define(['./constants'], function(Constants){
         }
     }
     return function(objs){
+        document.getElementById("score").innerHTML = "Score: " + objs.zombies.killed;
+        document.getElementById("health").innerHTML = "Health: " + objs.player.health;
         ctx.clearRect(0,0,Constants.canvasWidth,Constants.canvasHeight);
         world(objs.worldMovement);
         zombies(objs.zombies);

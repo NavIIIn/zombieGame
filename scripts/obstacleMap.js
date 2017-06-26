@@ -101,6 +101,8 @@ define(['./constants', './geometry', './obstacleFactory', './2dArray'], function
                 this.removeAdjacentDuplicates(i, j);
     };
     ObstacleMap.prototype.adjust = function(dx, dy){
+        this.x += dx;
+        this.y += dy;
         for(let obs of this.arr)
             obs.adjust(dx, dy);
     };
@@ -112,11 +114,6 @@ define(['./constants', './geometry', './obstacleFactory', './2dArray'], function
             return this.arr.get(gridX, gridY);
         else
             return this.arr.get(0,0);
-    };
-    ObstacleMap.prototype.move = function(worldMovement){
-        this.x += worldMovement.dx;
-        this.y += worldMovement.dy;
-        this.adjust(worldMovement.dx, worldMovement.dy);
     };
     ObstacleMap.prototype.getCollisionDirection = function(obj, size){
         var obs = this.findNearestObstacle(obj);

@@ -3,18 +3,13 @@
  *  - arrow...: respond to key clicks
  *  - mouseClick: fire bullet
  *  - update/render: update and render the game using specialized objects
+ *  - reset: start game over
  */
-define(['./keyMap', './obstacleMap', './world', './player', './bulletList', './zombieList', './updater', './renderer'], function(KeyMap, ObstacleMap, World, Player, BulletList, ZombieList, Updater, Renderer){
-    var objs = {
-        keyMap: new KeyMap(),
-        player: new Player(),
-        bullets: new BulletList(),
-        zombies: new ZombieList(),
-        worldMovement: new World(),
-        obsMap: new ObstacleMap(),
-        shotCounter: 0,
-        score: 0
-    };
+define(['./keyMap', './obstacleMap', './world', './player',
+        './bulletList', './zombieList', './updater', './renderer'],
+       function(KeyMap, ObstacleMap, World, Player,
+                BulletList, ZombieList, Updater, Renderer){
+    var objs;
     return {
         arrowDown: function(e){
             objs.keyMap.arrowDown(e);
@@ -24,12 +19,9 @@ define(['./keyMap', './obstacleMap', './world', './player', './bulletList', './z
         },
         mouseClick: function(e){
             var canvas = document.getElementById('gameStage');
-            if(objs.shotCounter < 1){
-                var mouseX = e.pageX - canvas.getBoundingClientRect().left;
-                var mouseY = e.pageY - canvas.getBoundingClientRect().top;
-                objs.bullets.add(mouseX, mouseY);
-                //objs.shotCounter = 15;
-            }
+            var mouseX = e.pageX - canvas.getBoundingClientRect().left;
+            var mouseY = e.pageY - canvas.getBoundingClientRect().top;
+            objs.bullets.add(mouseX, mouseY);
         },
         update: function(){
             return Updater(objs);
@@ -37,5 +29,15 @@ define(['./keyMap', './obstacleMap', './world', './player', './bulletList', './z
         render: function(){
             Renderer(objs);
         },
+        reset: function(){
+            objs = {
+                keyMap: new KeyMap(),
+                player: new Player(),
+                bullets: new BulletList(),
+                zombies: new ZombieList(),
+                worldMovement: new World(),
+                obsMap: new ObstacleMap()
+            };
+        }
     };
 });

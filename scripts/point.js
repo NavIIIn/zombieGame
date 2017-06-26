@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Point object
+ * Point Object
  */
 define(['./constants', './geometry'], function(Constants, Geometry){
     function Point(x, y){

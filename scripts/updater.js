@@ -10,7 +10,7 @@ define(['./constants', './zombie'], function(Constants, Zombie){
         worldMovement.move(keyMap, obsMap, player);
     }
     function obstacles(obsMap, worldMovement){
-        obsMap.move(worldMovement);
+        obsMap.adjust(worldMovement.dx, worldMovement.dy);
         obsMap.addWall();
     }
     function updateZombies(zombies, worldMovement, obsMap, bullets, player){
@@ -29,15 +29,12 @@ define(['./constants', './zombie'], function(Constants, Zombie){
         return bullets;
     }
     return function(objs){
-        document.getElementById("score").innerHTML = "Score: " + objs.score;
-        document.getElementById("health").innerHTML = "Health: " + objs.player.health;
-        updateZombies(objs.zombies, objs.worldMovement, objs.obsMap, objs.bullets, objs.player);
-        updateBullets(objs.bullets, objs.obsMap, objs.worldMovement);
-        world(objs.worldMovement, objs.obsMap, objs.keyMap, objs.player);
-        obstacles(objs.obsMap, objs.worldMovement);
-        objs.shotCounter--;
-        objs.score = objs.zombies.killed;
-
+        if(!objs.keyMap.paused){
+            updateZombies(objs.zombies, objs.worldMovement, objs.obsMap, objs.bullets, objs.player);
+            updateBullets(objs.bullets, objs.obsMap, objs.worldMovement);
+            world(objs.worldMovement, objs.obsMap, objs.keyMap, objs.player);
+            obstacles(objs.obsMap, objs.worldMovement);
+        }
         return !objs.player.dead();
     };
 });

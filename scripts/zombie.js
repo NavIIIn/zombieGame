@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Zombie Constructor
+ * Zombie Object
  */
 define(['./constants', './livePoint', './geometry'], function(Constants, LivePoint, Geometry){
     var cWidth = Constants.canvasWidth; // shorter name

@@ -1,9 +1,10 @@
 /*******************************************************************************
- * KeyMap Object
+ * KeyMap Object: keeps track of what keys are pressed
  */
 define([], function(){
     function KeyMap(){
         this.arr = [false, false, false, false];
+        this.paused = false;
     }
     KeyMap.prototype.arrowDown = function(e){
         switch(e.keyCode){
@@ -11,6 +12,7 @@ define([], function(){
         case 65: case 37: this.arr[1] = true; break; //a and left
         case 83: case 40: this.arr[2] = true; break; //s and down
         case 68: case 39: this.arr[3] = true; break; //d and right
+        case 80: this.paused = !this.paused; break; // pause key
         }
     };
     KeyMap.prototype.arrowUp = function(e){

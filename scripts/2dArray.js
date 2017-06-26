@@ -1,7 +1,13 @@
 /*******************************************************************************
  * 2D Array
+ *   - width/height: dimensions of array
+ *   - arr: underlying array
+ *   - fill: fills array with generated values
+ *   - add[direction]: adds a row/column of generated values
+ *   - getItems: get array of obstacles
+ *   - get: get value at index (i, j)
  */
-define(['./constants', './geometry'], function(Constants, Geometry){
+define([], function(){
     function Arr2d(width, height){
         this.width = width;
         this.height = height;
@@ -13,18 +19,6 @@ define(['./constants', './geometry'], function(Constants, Geometry){
         for(var i = 0; i < this.width; i++)
             for(var j = 0; j < this.height; j++)
                 this.arr[i].push(generator.next().value);
-    };
-    Arr2d.prototype.getCornerTL = function(){
-        return this.arr[0][0];
-    };
-    Arr2d.prototype.getCornerTR = function(){
-        return this.arr[this.width-1][0];
-    };
-    Arr2d.prototype.getCornerBL = function(){
-        return this.arr[0][this.height-1];
-    };
-    Arr2d.prototype.getCornerBR = function(){
-        return this.arr[this.width-1][this.height-1];
     };
     Arr2d.prototype.addLeft = function(generator){
         var newWall = [];

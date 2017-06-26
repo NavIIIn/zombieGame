@@ -1,7 +1,7 @@
 /*******************************************************************************
- * Edge Object
+ * Edge Object: contains location and walkable corners
  */
-define(['./constants', './point', './line', './obstacle'], function(Constants, Point, Line, Obstacle){
+define(['./constants', './point', './obstacle'], function(Constants, Point, Obstacle){
     function Edge(pt, dir){
         Point.call(this, pt.x, pt.y, dir);
         this.dir = dir;

@@ -14,12 +14,10 @@ requirejs.config({
 });
 requirejs(['constants', 'game'], function(Constants, Game){
     function Main(){
-        // Test
-        // outdated Test();
-        
         // Interface variables
         var gameLoop;
         var gameObj = Game;
+        gameObj.reset();
 
         // respond to events
         document.getElementById("doc").onkeydown = gameObj.arrowDown;
@@ -30,7 +28,6 @@ requirejs(['constants', 'game'], function(Constants, Game){
         function mainloop(){
             if(!gameObj.update()){
                 clearInterval(gameLoop);
-                Main();
             }
             gameObj.render();
         }
@@ -38,6 +35,7 @@ requirejs(['constants', 'game'], function(Constants, Game){
         // run game
         document.getElementById("start").onclick = function(){
             clearInterval(gameLoop);
+            gameObj.reset();
             gameLoop = setInterval(mainloop, Constants.frameTime);
         }
     }

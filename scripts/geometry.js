@@ -2,7 +2,9 @@
  * Geometry Tools
  *   - flipCoin: 50% chance of returning true
  *   - normalize: Helper with math for movement components
+ *   - normalize[X/Y]: calculates normalized component
  *   - distance: returns distance between p1 and p2
+ *   - intersects: returns whether path from p1 to q1 intersects path from p2 to q2
  */
 define([], function(){
     function _flipCoin(){

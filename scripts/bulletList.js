@@ -1,5 +1,8 @@
 /*******************************************************************************
  * BulletList Object
+ *   - add: adds new bullet to list
+ *   - move: calculates movement for each bullet
+ *   - remove: removes hit and offscreen bullets
  */
 define(['./bullet'], function(Bullet){
     function BulletList(){
