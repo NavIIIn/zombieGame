@@ -11,46 +11,36 @@ define(['./constants'], function(Constants){
         ctx.arc(p.x,p.y,Constants.playerSize,0,2*Math.PI);
         ctx.fill();
     }
-    function bullets(b){
-        b.each(function(v, i, arr){
+    function bullets(bullets){
+        for(let b of bullets){
             ctx.beginPath();
-            ctx.arc(v.x,v.y,Constants.bulletSize,0,2*Math.PI);
+            ctx.arc(b.x,b.y,Constants.bulletSize,0,2*Math.PI);
             ctx.fill();
-        });
+        }
     }
-    function zombies(z){
-        z.arr.forEach(function(v, i, arr){
+    function zombies(zombies){
+        for(let z of zombies){
             ctx.beginPath();
-            ctx.arc(v.x,v.y,Constants.zombieSize,0,2*Math.PI);
+            ctx.arc(z.x,z.y,Constants.zombieSize,0,2*Math.PI);
             ctx.fillStyle = '#105F10';
             ctx.fill();
             ctx.fillStyle = '#000000';
-        });
+        }
     }
     function world(worldMovement){
         ctx.beginPath();
         ctx.drawImage(bg,worldMovement.x,worldMovement.y);
         ctx.closePath();
     }
-    function obstacles(objinserter){
-        objinserter.getLines().forEach(function(v, i, arr){
+    function obstacles(obsMap){
+        for(let obs of obsMap.getLines()){
             ctx.beginPath();
             ctx.lineWidth = Constants.wallWidth;
-            ctx.moveTo(v.p.x, v.p.y);
-            ctx.lineTo(v.q.x, v.q.y);
+            ctx.moveTo(obs.p.x, obs.p.y);
+            ctx.lineTo(obs.q.x, obs.q.y);
             ctx.stroke();
             ctx.lineWidth = 1;
-        });
-        //objinserter.getEdges().forEach(function(v){
-            //ctx.beginPath();
-            //ctx.arc(v.x,v.y,3,0,2*Math.PI);
-            //ctx.fill();
-        //});
-        //objinserter.getCorners().forEach(function(v){
-            //ctx.beginPath();
-            //ctx.arc(v.x,v.y,3,0,2*Math.PI);
-            //ctx.fill();
-        //});
+        }
     }
     return function(objs){
         ctx.clearRect(0,0,Constants.canvasWidth,Constants.canvasHeight);

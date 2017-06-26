@@ -1,74 +1,52 @@
 /*******************************************************************************
  * Obstacle Map
  */
-define(['./constants', './geometry', './obstacleFactory'], function(Constants, Geometry, ObstacleFactory){
+define(['./constants', './geometry', './obstacleFactory', './2dArray'], function(Constants, Geometry, ObstacleFactory, Arr2d){
     var gridSize = Constants.gridSize;
     var obsFactory = new ObstacleFactory();
     function ObstacleMap(){
-        this.arr = [];
         this.x = 0;
         this.y = 0;
-        this.dx = 0;
-        this.dy = 0;
-        var newWall;
-        var totalHeight = Constants.canvasHeight + gridSize;
-        var totalWidth = Constants.canvasWidth + gridSize;
-        for(var i = 0; i < totalHeight; i+=gridSize){
-            newWall = [];
-            for(var j = 0; j < totalWidth; j+=gridSize){
-                newWall.push(obsFactory.getRandomObs(j, i));
-            }
-            this.arr.push(newWall);
-        }
+        var width = Math.ceil(Constants.canvasWidth/gridSize) + 1;
+        var height = Math.ceil(Constants.canvasHeight/gridSize) + 1;
+        var gen = obsFactory.get2dGenerator(0, 0, gridSize, gridSize, width, height);
+        this.arr = new Arr2d(width, height);
+        this.arr.fill(gen);
         this.removeAllDuplicateCorners();
     }
     ObstacleMap.prototype.addLeft = function(){
-        var adjX = this.arr[0][0].x - gridSize;
-        var adjY = this.arr[0][0].y;
-        for(var i = 0; i < this.arr.length; i++){
-            this.arr[i].unshift(obsFactory.getRandomObs(adjX, adjY));
-            this.arr[i].pop();
-            adjY += gridSize;
-            this.removeAdjacentDuplicates(i, 0);
-        }
-    };
-    ObstacleMap.prototype.addRight = function(){
-        var xlen = this.arr[0].length;
-        var adjX = this.arr[0][xlen-1].x + gridSize;
-        var adjY = this.arr[0][xlen-1].y;
-        for(var i = 0; i < this.arr.length; i++){
-            this.arr[i].push(obsFactory.getRandomObs(adjX, adjY));
-            this.arr[i].shift();
-            adjY += gridSize;
-            this.removeAdjacentDuplicates(i, this.arr[0].length-1);
-        }
-    };
-    ObstacleMap.prototype.addTop = function(){
-        var adjX = this.arr[0][0].x;
-        var adjY = this.arr[0][0].y - gridSize;
-        var newWall = [];
-        for(var i = 0; i < this.arr[0].length; i++){
-            newWall.push(obsFactory.getRandomObs(adjX, adjY));
-            adjX += gridSize;
-        }
-        this.arr.unshift(newWall);
-        this.arr.pop();
-        for(var i = 0; i < this.arr[0].length; i++)
+        var adjX = this.arr.get(0,0).x - gridSize;
+        var adjY = this.arr.get(0,0).y;
+        var obsGen = obsFactory.getGenerator(adjX, adjY, 0, gridSize, this.arr.height);
+        this.arr.addLeft(obsGen);
+        for(var i = this.arr.height; i--;)
             this.removeAdjacentDuplicates(0, i);
     };
+    ObstacleMap.prototype.addRight = function(){
+        var startObs = this.arr.get(this.arr.width-1, 0);
+        var adjX = startObs.x + gridSize;
+        var adjY = startObs.y;
+        var obsGen = obsFactory.getGenerator(adjX, adjY, 0, gridSize, this.arr.height);
+        this.arr.addRight(obsGen);
+        for(var i = this.arr.height; i--;)
+            this.removeAdjacentDuplicates(this.arr.width-1, i);
+    };
+    ObstacleMap.prototype.addTop = function(){
+        var adjX = this.arr.get(0,0).x;
+        var adjY = this.arr.get(0,0).y - gridSize;
+        var obsGen = obsFactory.getGenerator(adjX, adjY, gridSize, 0, this.arr.width);
+        this.arr.addTop(obsGen);
+        for(var i = this.arr.width; i--;)
+            this.removeAdjacentDuplicates(i, 0);
+    };
     ObstacleMap.prototype.addBottom = function(){
-        var ylen = this.arr.length;
-        var adjX = this.arr[ylen-1][0].x;
-        var adjY = this.arr[ylen-1][0].y + gridSize;
-        var newWall = [];
-        for(var i = 0; i < this.arr[0].length; i++){
-            newWall.push(obsFactory.getRandomObs(adjX, adjY));
-            adjX += gridSize;
-        }
-        this.arr.push(newWall);
-        this.arr.shift();
-        for(var i = 0; i < this.arr[0].length; i++)
-            this.removeAdjacentDuplicates(ylen-1, i);
+        var startObs = this.arr.get(0, this.arr.height-1);
+        var adjX = startObs.x;
+        var adjY = startObs.y + gridSize;
+        var obsGen = obsFactory.getGenerator(adjX, adjY, gridSize, 0, this.arr.width);
+        this.arr.addBottom(obsGen);
+        for(var i = this.arr.width; i--;)
+            this.removeAdjacentDuplicates(i, this.arr.height-1);
     };
     ObstacleMap.prototype.addWall = function(){
         if(this.x > 0){
@@ -89,9 +67,7 @@ define(['./constants', './geometry', './obstacleFactory'], function(Constants, G
         }
     };
     ObstacleMap.prototype.getObstacles = function(){
-        return this.arr.reduce(function(arr, cur){
-            return arr.concat(cur);
-        }, []);
+        return this.arr.getItems();
     };
     ObstacleMap.prototype.getLines = function(){
         return this.getObstacles().reduce(function(acc, cur){
@@ -109,86 +85,42 @@ define(['./constants', './geometry', './obstacleFactory'], function(Constants, G
         }, []);
     };
     ObstacleMap.prototype.removeAdjacentDuplicates = function(i, j){
+        var obs = this.arr.get(i, j);
         if(i > 0)
-            this.arr[i][j].removeDuplicateEdges(this.arr[i-1][j]);
-        if(i < this.arr.length-1)
-            this.arr[i][j].removeDuplicateEdges(this.arr[i+1][j]);
+            obs.removeDuplicateEdges(this.arr.get(i-1, j));
+        if(i < this.arr.width-1)
+            obs.removeDuplicateEdges(this.arr.get(i+1, j));
         if(j > 0)
-            this.arr[i][j].removeDuplicateEdges(this.arr[i][j-1]);
-        if(j < this.arr[i].length-1)
-            this.arr[i][j].removeDuplicateEdges(this.arr[i][j+1]);
+            obs.removeDuplicateEdges(this.arr.get(i, j-1));
+        if(j < this.arr.height-1)
+            obs.removeDuplicateEdges(this.arr.get(i, j+1));
     };
     ObstacleMap.prototype.removeAllDuplicateCorners = function(){
-        for(i = 0; i < this.arr.length; i++)
-            for(j = 0; j < this.arr[0].length; j++)
+        for(i = 0; i < this.arr.width; i++)
+            for(j = 0; j < this.arr.height; j++)
                 this.removeAdjacentDuplicates(i, j);
     };
     ObstacleMap.prototype.adjust = function(dx, dy){
-        this.arr.forEach(function(row, j, m){
-            row.forEach(function(v, i, r){
-                v.adjust(dx, dy);
-            });
-        });
+        for(let obs of this.arr)
+            obs.adjust(dx, dy);
     };
     ObstacleMap.prototype.findNearestObstacle = function(obj){
-        var gridX = Math.floor((obj.x-this.arr[0][0].x)/gridSize);
-        var gridY = Math.floor((obj.y-this.arr[0][0].y)/gridSize);
+        var gridX = Math.floor((obj.x-this.arr.get(0,0).x)/gridSize);
+        var gridY = Math.floor((obj.y-this.arr.get(0,0).y)/gridSize);
         if(gridX >= 0 && gridY >= 0 &&
-          gridX < this.arr[0].length && gridY < this.arr.length)
-            return this.arr[gridY][gridX];
+          gridX < this.arr.width && gridY < this.arr.height)
+            return this.arr.get(gridX, gridY);
         else
-            return this.arr[0][0];
+            return this.arr.get(0,0);
     };
-    ObstacleMap.prototype.collides = function(obj, size){
-        return this.findNearestObstacle(obj).lines.reduce(function(acc, cur){
-            return acc || cur.collides(obj, size);
-        }, false);
+    ObstacleMap.prototype.move = function(worldMovement){
+        this.x += worldMovement.dx;
+        this.y += worldMovement.dy;
+        this.adjust(worldMovement.dx, worldMovement.dy);
     };
-    ObstacleMap.prototype.move = function(keyMap, player){
-        var dir = this.getCollisionDirection(player, Constants.playerSize);
-        var raw_x = keyMap.getHorizontalDir();
-        var raw_y = keyMap.getVerticalDir();
-        this.dx = Geometry.normalizeX(raw_x, raw_y, Constants.playerSpeed);
-        this.dy = Geometry.normalizeY(raw_x, raw_y, Constants.playerSpeed);
-        if((dir.right && this.dx < 0) || (dir.left && this.dx > 0))
-            this.dx = 0;
-        if((dir.top && this.dy > 0) || (dir.bottom && this.dy < 0))
-            this.dy = 0;
-        this.x += this.dx;
-        this.y += this.dy;
-        this.adjust(this.dx, this.dy);
-    };
-    function corner(ln, obj){
-        var lr = ln.p.x > obj.x && ln.q.x > obj.x
-            || ln.p.x < obj.x && ln.q.x < obj.x;
-        var tb = ln.p.y > obj.y && ln.q.y > obj.y
-            || ln.q.y < obj.y && ln.q.y < obj.y;
-        return lr && tb;
-    }
     ObstacleMap.prototype.getCollisionDirection = function(obj, size){
         var obs = this.findNearestObstacle(obj);
-        return {
-            right: obs.lines.some(function(cur){
-                return cur.collides(obj, size) &&
-                    cur.p.x > obj.x && cur.q.x > obj.x &&
-                    !corner(cur, obj);
-            }),
-            left: obs.lines.some(function(cur){
-                return cur.collides(obj, size) &&
-                    cur.p.x < obj.x && cur.q.x < obj.x &&
-                    !corner(cur, obj);
-            }),
-            top: obs.lines.some(function(cur){
-                return cur.collides(obj, size) &&
-                    cur.p.y < obj.y && cur.q.y < obj.y &&
-                    !corner(cur, obj);
-            }),
-            bottom: obs.lines.some(function(cur){
-                return cur.collides(obj, size) &&
-                    cur.p.y > obj.y && cur.q.y > obj.y &&
-                    !corner(cur, obj);
-            })
-        };
+        return obs.getCollisionDirection(obj, size);
     };
     ObstacleMap.prototype.lineOfSight = function(p1, p2){
         return !this.getLines().some(function(v){

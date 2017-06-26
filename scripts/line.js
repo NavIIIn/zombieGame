@@ -21,8 +21,25 @@ define(['./constants', './geometry'], function(Constants, Geometry){
             || pt.x > this.q.x - size && pt.x < this.p.x + size;
         var inY = pt.y > this.p.y - size && pt.y < this.q.y + size 
             || pt.y > this.q.y - size && pt.y < this.p.y + size;
-            
-        return inY && inX;
+        var inLine = inY && inX;
+        
+        var lr = this.p.x > pt.x && this.q.x > pt.x
+            || this.p.x < pt.x && this.q.x < pt.x;
+        var tb = this.p.y > pt.y && this.q.y > pt.y
+            || this.q.y < pt.y && this.q.y < pt.y;
+        var onCorner = lr && tb;
+
+        return inLine && !onCorner;
+    };
+    Line.prototype.getCollisionDirection = function(pt, size){
+        var dir = {right: false, left: false, top: false, bottom: false };
+        if(this.collides(pt, size)){
+            dir.right  = this.p.x > pt.x && this.q.x > pt.x;
+            dir.left   = this.p.x < pt.x && this.q.x < pt.x;
+            dir.top    = this.p.y < pt.y && this.q.y < pt.y;
+            dir.bottom = this.p.y > pt.y && this.q.y > pt.y;
+        }
+        return dir;
     };
     return Line;
 });

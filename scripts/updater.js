@@ -5,22 +5,22 @@
  *  - update/render: update and render the game using specialized objects
  */
 define(['./constants', './zombie'], function(Constants, Zombie){
-    var killed = 0;
-    function world(worldMovement, obsMap){
-        worldMovement.copySpeed(obsMap);
-        worldMovement.move();
+    var bulletRange = Constants.zombieSize + Constants.bulletSize;
+    function world(worldMovement, obsMap, keyMap, player){
+        worldMovement.move(keyMap, obsMap, player);
     }
-    function obstacles(obsMap, keyMap, player){
-        obsMap.move(keyMap, player);
+    function obstacles(obsMap, worldMovement){
+        obsMap.move(worldMovement);
         obsMap.addWall();
     }
     function updateZombies(zombies, worldMovement, obsMap, bullets, player){
         zombies.updateHash();
         zombies.add();
-        killed = zombies.update(worldMovement, obsMap);
+        zombies.update(worldMovement, obsMap);
         zombies.remove();
-        bullets.arr.forEach(function(v){zombies.collide(v, Constants.zombieSize + Constants.bulletSize)});
-        zombies.collide(player, Constants.zombieSize+Constants.playerSize);
+        for(let b of bullets)
+            zombies.collide(b, bulletRange);
+        zombies.collide(player, bulletRange);
         return zombies;
     }
     function updateBullets(bullets, obsMap, world){
@@ -31,12 +31,12 @@ define(['./constants', './zombie'], function(Constants, Zombie){
     return function(objs){
         document.getElementById("score").innerHTML = "Score: " + objs.score;
         document.getElementById("health").innerHTML = "Health: " + objs.player.health;
-        objs.zombies = updateZombies(objs.zombies, objs.worldMovement, objs.obsMap, objs.bullets, objs.player);
-        objs.bullets = updateBullets(objs.bullets, objs.obsMap, objs.worldMovement);
-        world(objs.worldMovement, objs.obsMap);
-        obstacles(objs.obsMap, objs.keyMap, objs.player);
+        updateZombies(objs.zombies, objs.worldMovement, objs.obsMap, objs.bullets, objs.player);
+        updateBullets(objs.bullets, objs.obsMap, objs.worldMovement);
+        world(objs.worldMovement, objs.obsMap, objs.keyMap, objs.player);
+        obstacles(objs.obsMap, objs.worldMovement);
         objs.shotCounter--;
-        objs.score += killed;
+        objs.score = objs.zombies.killed;
 
         return !objs.player.dead();
     };

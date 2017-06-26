@@ -12,15 +12,19 @@ define(['./constants'], function(Constants){
             result.push(cur);
         return result;
     }
+    function arrayFactory(len){
+        var result = [];
+        while(result.length < len)
+            result.push([]);
+        return result;
+    }
 
     function Table(items){
-        this.arr = [];
         this.length = 17;
-        for(var i = this.length; i--;)
-            this.arr.push([]);
+        this.arr = arrayFactory(this.length);
         if(items) // initial values given
-            for(var i = items.length; i--;)
-                this.insert(items[i]);
+            for(let cur of items)
+                this.insert(cur);
     }
     Table.prototype.getIndex = function(x, y){
         var x = Math.floor(x/gridX);
@@ -40,8 +44,8 @@ define(['./constants'], function(Constants){
     };
     Table.prototype.insert = function(pt){
         var indices = this.getIndices(pt);
-        for(var i = indices.length; i--;)
-            this.arr[indices[i]].push(pt);
+        for(let i of indices)
+            this.arr[i].push(pt);
     };
     Table.prototype.getCollidingItem = function(pt, rad){
         return this.arr[this.getIndex(pt.x, pt.y)].find(function(v){
@@ -53,5 +57,40 @@ define(['./constants'], function(Constants){
             return v.isNear(pt, rad);
         });
     };
+    Table.prototype[Symbol.iterator] = function* (){
+        var seen = [];
+        for(let grid of this.arr)
+            for(let cur of grid)
+                if(!seen.includes(cur)){
+                    seen.push(cur);
+                    yield cur;
+                }
+    };
+    Table.prototype.getSize = function(){
+        var count = 0;
+        for(let grid of this.arr)
+            count += grid.length;
+        return count;
+    };
+    Table.prototype.filter = function(fn){
+        for(let i = this.arr.length; i--;)
+            this.arr[i] = this.arr[i].filter(fn);
+        //for(let grid of this.arr){
+            //grid = grid.filter(fn);
+        //}
+    };
+    Table.prototype.getArray = function(){
+        var result = [];
+        for(let cur of this)
+            result.push(cur);
+        return result;
+    };
+    Table.prototype.update = function(){
+        var tmp = this.getArray();
+        this.arr = arrayFactory(this.length);
+        for(let cur of tmp)
+            this.insert(cur);
+    };
+            
     return Table;
 });

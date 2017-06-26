@@ -3,9 +3,9 @@
  */
 define(['./constants', './spacialHash', './zombie', './theta', './point', './nodeList'], function(Constants, SpacialHash, Zombie, Theta, Point, NodeList){
     function ZombieList(){
-        this.arr = [];
         this.hash = new SpacialHash();
         this.timer = 0;
+        this.killed = 0;
     }
     ZombieList.prototype.getRandomSpeed = function(){
         var speed = Math.random()*Math.log(this.timer/100);
@@ -17,8 +17,8 @@ define(['./constants', './spacialHash', './zombie', './theta', './point', './nod
     }
     ZombieList.prototype.add = function(){
         if(Math.random() < Math.log(this.timer)*Constants.spawnRate &&
-           this.arr.length < Constants.maxZombies)
-            this.arr.push(new Zombie(this.getRandomSpeed()));
+           this.hash.getSize() < Constants.maxZombies)
+            this.hash.insert(new Zombie(this.getRandomSpeed()));
         this.timer++;
     };
     ZombieList.prototype.getPath = function(zombie, nodes){
@@ -27,10 +27,8 @@ define(['./constants', './spacialHash', './zombie', './theta', './point', './nod
                      nodes);
     };
     ZombieList.prototype.update = function(worldMovement, obsMap){
-        var killed = 0;
         var nodes = new NodeList(obsMap);
-        for(var i = this.arr.length; i--;){
-            var cur = this.arr[i];
+        for(let cur of this.hash){
             if(cur.path.length < 4 && cur.counter > 20){
                 cur.path = this.getPath(cur, nodes);
                 cur.counter = 0;
@@ -40,24 +38,28 @@ define(['./constants', './spacialHash', './zombie', './theta', './point', './nod
             cur.adjustWorld(worldMovement.dx, worldMovement.dy);
             cur.move();
             if(cur.dead())
-                killed++;
+                this.killed++;
         }
-        return killed;
     };
     ZombieList.prototype.remove = function(){
-        this.arr = this.arr.filter(function(v){
+        this.hash.filter(function(v){
             return !v.dead() && v.inBounds();
         });
     };
     ZombieList.prototype.updateHash = function(){
         if(this.timer % Constants.hashRefresh == 0)
-            this.hash = new SpacialHash(this.arr);
+            this.hash.update();
     };
     ZombieList.prototype.collide = function(pt, rad){
-        this.hash.getCollidingItems(pt, rad).forEach(function(v){
-            v.hit(pt);
-            pt.hit(v);
-        });
+        collidingZombies = this.hash.getCollidingItems(pt, rad)
+        for(let cur of collidingZombies){
+            cur.hit(pt);
+            pt.hit(cur);
+        }
+    };
+    ZombieList.prototype[Symbol.iterator] = function* (){
+        for(let cur of this.hash)
+            yield cur;
     };
     return ZombieList;
 });

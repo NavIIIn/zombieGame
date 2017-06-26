@@ -99,5 +99,14 @@ define(['./constants', './point', './line', './edge', './obstacle'], function(Co
         var rand = Math.floor(Math.random()*this.obs.length);
         return this.obs[rand].copy().adjust(x, y);
     };
+    ObstacleFactory.prototype.getGenerator = function* (x0, y0, x_int, y_int, size){
+        for(var i = 0; i < size; i++)
+            yield this.getRandomObs(x0+x_int*i, y0+y_int*i);
+    };
+    ObstacleFactory.prototype.get2dGenerator = function* (x0, y0, x_int, y_int, width, height){
+        for(var i = 0; i < width; i++)
+            for(var j = 0; j < height; j++)
+                yield this.getRandomObs(x0+x_int*i, y0+y_int*j);
+    };
     return ObstacleFactory;
 });

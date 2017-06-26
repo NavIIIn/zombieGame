@@ -56,5 +56,21 @@ define([], function(){
             return acc || cur.collides(obj, size);
         }, false);
     };
+    Obstacle.prototype.getCollisionDirection = function(pt, size){
+        return {
+            right: this.lines.some(function(cur){
+                return cur.getCollisionDirection(pt, size).right;
+            }),
+            left: this.lines.some(function(cur){
+                return cur.getCollisionDirection(pt, size).left;
+            }),
+            top: this.lines.some(function(cur){
+                return cur.getCollisionDirection(pt, size).top;
+            }),
+            bottom: this.lines.some(function(cur){
+                return cur.getCollisionDirection(pt, size).bottom;
+            })
+        };
+    };
     return Obstacle;
 });

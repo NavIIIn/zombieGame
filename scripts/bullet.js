@@ -14,6 +14,7 @@ define(['./constants', './point', './livePoint', './Geometry'], function(Constan
         this.firePosition = new Point(centerX, centerY);
     }
     Bullet.prototype = Object.create(LivePoint.prototype);
+    Bullet.prototype.size = Constants.bulletSize;
     Bullet.prototype.inBounds = function(){
         return this.inSquare(0, Constants.canvasWidth, 0, Constants.canvasHeight);
     };
