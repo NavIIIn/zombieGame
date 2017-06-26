@@ -1,5 +1,11 @@
 /*******************************************************************************
  * Zombie Object
+ *  - path: list of nodes that lead to player
+ *  - counter: recalculates path and resets value on zero, decrements per frame
+ *  - inBounds: returns whether zombie is near visible range
+ *  - getBorders: gets the edge of space occupied
+ *  - adjustWorld: adjusts path and location to world movement
+ *  - setDirection: sets dx and dy to move toward next point on path
  */
 define(['./constants', './livePoint', './geometry'], function(Constants, LivePoint, Geometry){
     var cWidth = Constants.canvasWidth; // shorter name

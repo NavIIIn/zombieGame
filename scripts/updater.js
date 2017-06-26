@@ -21,12 +21,10 @@ define(['./constants', './zombie'], function(Constants, Zombie){
         for(let b of bullets)
             zombies.collide(b, bulletRange);
         zombies.collide(player, bulletRange);
-        return zombies;
     }
     function updateBullets(bullets, obsMap, world){
         bullets.move(world);
         bullets.remove(obsMap);
-        return bullets;
     }
     return function(objs){
         if(!objs.keyMap.paused){

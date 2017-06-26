@@ -1,5 +1,11 @@
 /*******************************************************************************
  * NodeList Object
+ *   - lineOfSight: returns whether p1 has los to p2
+ *   - hasNeighbors: returns whether neighbors variable has been set
+ *   - setNeighbors: calculates neighbors
+ *   - getNeighbors: returns neighbors
+ *   - getMutualNeighbors: gets neighbors p1 has in common with p2
+ *   - push: adds new node
  */
 define(['./constants', './point', './Geometry'], function(Constants, Point, Geometry){
     function NodeList(obsMap){

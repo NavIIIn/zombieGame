@@ -1,5 +1,9 @@
 /*******************************************************************************
- * Live Point Constructor
+ * Live Point Object
+ *   - hit: deals damage to point from other
+ *   - dead: returns whether health is below 0
+ *   - inSquare: returns whether point is within dimensions
+ *   - move: calculates movement for one frame
  */
 define(['./constants', './point'], function(Constants, Point){
     function LivePoint(x, y, health, damage, dx, dy){

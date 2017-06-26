@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Player Constructor
+ * Player Object
  */
 define(['./constants', './livePoint'], function(Constants, LivePoint){
     function Player(){
@@ -8,30 +8,5 @@ define(['./constants', './livePoint'], function(Constants, LivePoint){
         this.size = Constants.playerSize;
     }
     Player.prototype = Object.create(LivePoint.prototype);
-    Player.prototype.getCollisionDirection = function(obsMap){
-        var obs = obsMap.findNearestObstacle(this);
-        return {
-            right: obs.lines.some(function(cur){
-                return cur.collides(obj, this.size) &&
-                    cur.p.x > obj.x && cur.q.x > obj.x &&
-                    !corner(cur, obj);
-            }),
-            left: obs.lines.some(function(cur){
-                return cur.collides(obj, this.size) &&
-                    cur.p.x < obj.x && cur.q.x < obj.x &&
-                    !corner(cur, obj);
-            }),
-            top: obs.lines.some(function(cur){
-                return cur.collides(obj, this.size) &&
-                    cur.p.y < obj.y && cur.q.y < obj.y &&
-                    !corner(cur, obj);
-            }),
-            bottom: obs.lines.some(function(cur){
-                return cur.collides(obj, this.size) &&
-                    cur.p.y > obj.y && cur.q.y > obj.y &&
-                    !corner(cur, obj);
-            })
-        };
-    };
     return Player;
 });

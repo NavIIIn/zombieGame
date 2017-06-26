@@ -1,5 +1,11 @@
 /*******************************************************************************
- * Line object
+ * Line Object
+ *   - p/q: endpoints
+ *   - intersects: returns whether path from a to b intersects line
+ *   - adjust: moves line on screen in given direction
+ *   - collides: returns true if pt is within size distance of line
+ *   - getCollisionDirection: returns array of booleans associated with
+ *       collison direction
  */
 define(['./constants', './geometry'], function(Constants, Geometry){
     function Line(p, q){

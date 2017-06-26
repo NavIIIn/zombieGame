@@ -1,5 +1,13 @@
 /*******************************************************************************
  * ZombieList Object
+ *   - timer: increments per frame, higher value means more zombies spawn
+ *   - killed: total number of zombies killed by player
+ *   - add: possibly adds new zombie depending on timer
+ *   - getPath: sets zombies path using theta* search
+ *   - update: updates each zombie for a new frame
+ *   - remove: removes dead and out of bounds zombies
+ *   - updateHash: moves zombies to correct hash index
+ *   - collide: attacks nearby opponents
  */
 define(['./constants', './spacialHash', './zombie', './theta', './point', './nodeList'], function(Constants, SpacialHash, Zombie, Theta, Point, NodeList){
     function ZombieList(){

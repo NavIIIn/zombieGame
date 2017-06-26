@@ -1,5 +1,10 @@
 /*******************************************************************************
  * Point Object
+ *  - copy: returns clone of point
+ *  - distance: returns distance from this to other point
+ *  - isNear: returns whether other point is within certain distance of this
+ *  - equals: returns whether other point shares location
+ *  - adjust: moves point in given direction
  */
 define(['./constants', './geometry'], function(Constants, Geometry){
     function Point(x, y){

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Priority Queue
+ * Priority Queue - Array with ordered data
  */
 define([], function(){
     function PriorityQueue() {

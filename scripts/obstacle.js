@@ -1,5 +1,12 @@
 /*******************************************************************************
  * Obstacle Object
+ *   - getCorners: returns all corners in obstacle
+ *   - adjust: moves object in given direction
+ *   - copy: copies object
+ *   - removeDuplicateEdges: removes edges in common with other obstacle
+ *   - collides: returns whether given object is colliding with a line
+ *   - getCollisionDirection: returns boolean array of directions a given point
+ *       is impacting a line from
  */
 define([], function(){
     function Obstacle(lines, edges){

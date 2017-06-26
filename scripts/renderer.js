@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Renderer Constructor
+ * Renderer Function - Renders all objects to screen
  */
 define(['./constants'], function(Constants){
     var canvas = document.getElementById('gameStage');

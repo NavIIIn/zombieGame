@@ -27,11 +27,12 @@ define('constants',{
 });
 
 /*******************************************************************************
- * KeyMap Object
+ * KeyMap Object: keeps track of what keys are pressed
  */
 define('keyMap',[], function(){
     function KeyMap(){
         this.arr = [false, false, false, false];
+        this.paused = false;
     }
     KeyMap.prototype.arrowDown = function(e){
         switch(e.keyCode){
@@ -39,6 +40,7 @@ define('keyMap',[], function(){
         case 65: case 37: this.arr[1] = true; break; //a and left
         case 83: case 40: this.arr[2] = true; break; //s and down
         case 68: case 39: this.arr[3] = true; break; //d and right
+        case 80: this.paused = !this.paused; break; // pause key
         }
     };
     KeyMap.prototype.arrowUp = function(e){
@@ -64,7 +66,9 @@ define('keyMap',[], function(){
  * Geometry Tools
  *   - flipCoin: 50% chance of returning true
  *   - normalize: Helper with math for movement components
+ *   - normalize[X/Y]: calculates normalized component
  *   - distance: returns distance between p1 and p2
+ *   - intersects: returns whether path from p1 to q1 intersects path from p2 to q2
  */
 define('geometry',[], function(){
     function _flipCoin(){
@@ -116,7 +120,12 @@ define('geometry',[], function(){
 });
 
 /*******************************************************************************
- * Point object
+ * Point Object
+ *  - copy: returns clone of point
+ *  - distance: returns distance from this to other point
+ *  - isNear: returns whether other point is within certain distance of this
+ *  - equals: returns whether other point shares location
+ *  - adjust: moves point in given direction
  */
 define('point',['./constants', './geometry'], function(Constants, Geometry){
     function Point(x, y){
@@ -147,7 +156,13 @@ define('point',['./constants', './geometry'], function(Constants, Geometry){
 });
 
 /*******************************************************************************
- * Line object
+ * Line Object
+ *   - p/q: endpoints
+ *   - intersects: returns whether path from a to b intersects line
+ *   - adjust: moves line on screen in given direction
+ *   - collides: returns true if pt is within size distance of line
+ *   - getCollisionDirection: returns array of booleans associated with
+ *       collison direction
  */
 define('line',['./constants', './geometry'], function(Constants, Geometry){
     function Line(p, q){
@@ -194,6 +209,13 @@ define('line',['./constants', './geometry'], function(Constants, Geometry){
 
 /*******************************************************************************
  * Obstacle Object
+ *   - getCorners: returns all corners in obstacle
+ *   - adjust: moves object in given direction
+ *   - copy: copies object
+ *   - removeDuplicateEdges: removes edges in common with other obstacle
+ *   - collides: returns whether given object is colliding with a line
+ *   - getCollisionDirection: returns boolean array of directions a given point
+ *       is impacting a line from
  */
 define('obstacle',[], function(){
     function Obstacle(lines, edges){
@@ -270,9 +292,9 @@ define('obstacle',[], function(){
 });
 
 /*******************************************************************************
- * Edge Object
+ * Edge Object: contains location and walkable corners
  */
-define('edge',['./constants', './point', './line', './obstacle'], function(Constants, Point, Line, Obstacle){
+define('edge',['./constants', './point', './obstacle'], function(Constants, Point, Obstacle){
     function Edge(pt, dir){
         Point.call(this, pt.x, pt.y, dir);
         this.dir = dir;
@@ -424,8 +446,14 @@ define('obstacleFactory',['./constants', './point', './line', './edge', './obsta
 
 /*******************************************************************************
  * 2D Array
+ *   - width/height: dimensions of array
+ *   - arr: underlying array
+ *   - fill: fills array with generated values
+ *   - add[direction]: adds a row/column of generated values
+ *   - getItems: get array of obstacles
+ *   - get: get value at index (i, j)
  */
-define('2dArray',['./constants', './geometry'], function(Constants, Geometry){
+define('2dArray',[], function(){
     function Arr2d(width, height){
         this.width = width;
         this.height = height;
@@ -437,18 +465,6 @@ define('2dArray',['./constants', './geometry'], function(Constants, Geometry){
         for(var i = 0; i < this.width; i++)
             for(var j = 0; j < this.height; j++)
                 this.arr[i].push(generator.next().value);
-    };
-    Arr2d.prototype.getCornerTL = function(){
-        return this.arr[0][0];
-    };
-    Arr2d.prototype.getCornerTR = function(){
-        return this.arr[this.width-1][0];
-    };
-    Arr2d.prototype.getCornerBL = function(){
-        return this.arr[0][this.height-1];
-    };
-    Arr2d.prototype.getCornerBR = function(){
-        return this.arr[this.width-1][this.height-1];
     };
     Arr2d.prototype.addLeft = function(generator){
         var newWall = [];
@@ -595,6 +611,8 @@ define('obstacleMap',['./constants', './geometry', './obstacleFactory', './2dArr
                 this.removeAdjacentDuplicates(i, j);
     };
     ObstacleMap.prototype.adjust = function(dx, dy){
+        this.x += dx;
+        this.y += dy;
         for(let obs of this.arr)
             obs.adjust(dx, dy);
     };
@@ -607,11 +625,6 @@ define('obstacleMap',['./constants', './geometry', './obstacleFactory', './2dArr
         else
             return this.arr.get(0,0);
     };
-    ObstacleMap.prototype.move = function(worldMovement){
-        this.x += worldMovement.dx;
-        this.y += worldMovement.dy;
-        this.adjust(worldMovement.dx, worldMovement.dy);
-    };
     ObstacleMap.prototype.getCollisionDirection = function(obj, size){
         var obs = this.findNearestObstacle(obj);
         return obs.getCollisionDirection(obj, size);
@@ -623,7 +636,6 @@ define('obstacleMap',['./constants', './geometry', './obstacleFactory', './2dArr
     };
     return ObstacleMap;
 });
-
 
 /*******************************************************************************
  * World Movement
@@ -660,7 +672,11 @@ define('world',['./constants', './geometry'], function(Constants, Geometry){
 });
 
 /*******************************************************************************
- * Live Point Constructor
+ * Live Point Object
+ *   - hit: deals damage to point from other
+ *   - dead: returns whether health is below 0
+ *   - inSquare: returns whether point is within dimensions
+ *   - move: calculates movement for one frame
  */
 define('livePoint',['./constants', './point'], function(Constants, Point){
     function LivePoint(x, y, health, damage, dx, dy){
@@ -688,7 +704,7 @@ define('livePoint',['./constants', './point'], function(Constants, Point){
 });
 
 /*******************************************************************************
- * Player Constructor
+ * Player Object
  */
 define('player',['./constants', './livePoint'], function(Constants, LivePoint){
     function Player(){
@@ -697,31 +713,6 @@ define('player',['./constants', './livePoint'], function(Constants, LivePoint){
         this.size = Constants.playerSize;
     }
     Player.prototype = Object.create(LivePoint.prototype);
-    Player.prototype.getCollisionDirection = function(obsMap){
-        var obs = obsMap.findNearestObstacle(this);
-        return {
-            right: obs.lines.some(function(cur){
-                return cur.collides(obj, this.size) &&
-                    cur.p.x > obj.x && cur.q.x > obj.x &&
-                    !corner(cur, obj);
-            }),
-            left: obs.lines.some(function(cur){
-                return cur.collides(obj, this.size) &&
-                    cur.p.x < obj.x && cur.q.x < obj.x &&
-                    !corner(cur, obj);
-            }),
-            top: obs.lines.some(function(cur){
-                return cur.collides(obj, this.size) &&
-                    cur.p.y < obj.y && cur.q.y < obj.y &&
-                    !corner(cur, obj);
-            }),
-            bottom: obs.lines.some(function(cur){
-                return cur.collides(obj, this.size) &&
-                    cur.p.y > obj.y && cur.q.y > obj.y &&
-                    !corner(cur, obj);
-            })
-        };
-    };
     return Player;
 });
 
@@ -729,7 +720,9 @@ define('player',['./constants', './livePoint'], function(Constants, LivePoint){
  * Geometry Tools
  *   - flipCoin: 50% chance of returning true
  *   - normalize: Helper with math for movement components
+ *   - normalize[X/Y]: calculates normalized component
  *   - distance: returns distance between p1 and p2
+ *   - intersects: returns whether path from p1 to q1 intersects path from p2 to q2
  */
 define('Geometry',[], function(){
     function _flipCoin(){
@@ -781,18 +774,17 @@ define('Geometry',[], function(){
 });
 
 /*******************************************************************************
- * Bullet Constructor
+ * Bullet Object
+ *   - inBounds: returns whether onscreen
+ *   - adjustWorld: adjust bullet location and fire location
  */
 define('bullet',['./constants', './point', './livePoint', './Geometry'], function(Constants, Point, LivePoint, Geometry){
     function Bullet(x, y){
         var centerX = Constants.canvasWidth/2;
         var centerY = Constants.canvasHeight/2;
-        var xcomp   = x - centerX;
-        var ycomp   = y - centerY;
-        LivePoint.call(this, centerX, centerY,
-                       1, Constants.bulletDamage,
-                       Geometry.normalizeX(xcomp, ycomp, Constants.bulletSpeed),
-                       Geometry.normalizeY(xcomp, ycomp, Constants.bulletSpeed));
+        var dx = Geometry.normalizeX(x-centerX, y-centerY, Constants.bulletSpeed);
+        var dy = Geometry.normalizeY(x-centerX, y-centerY, Constants.bulletSpeed);
+        LivePoint.call(this, centerX, centerY, 1, Constants.bulletDamage, dx, dy);
         this.firePosition = new Point(centerX, centerY);
     }
     Bullet.prototype = Object.create(LivePoint.prototype);
@@ -810,6 +802,9 @@ define('bullet',['./constants', './point', './livePoint', './Geometry'], functio
 
 /*******************************************************************************
  * BulletList Object
+ *   - add: adds new bullet to list
+ *   - move: calculates movement for each bullet
+ *   - remove: removes hit and offscreen bullets
  */
 define('bulletList',['./bullet'], function(Bullet){
     function BulletList(){
@@ -936,7 +931,13 @@ define('spacialHash',['./constants'], function(Constants){
 });
 
 /*******************************************************************************
- * Zombie Constructor
+ * Zombie Object
+ *  - path: list of nodes that lead to player
+ *  - counter: recalculates path and resets value on zero, decrements per frame
+ *  - inBounds: returns whether zombie is near visible range
+ *  - getBorders: gets the edge of space occupied
+ *  - adjustWorld: adjusts path and location to world movement
+ *  - setDirection: sets dx and dy to move toward next point on path
  */
 define('zombie',['./constants', './livePoint', './geometry'], function(Constants, LivePoint, Geometry){
     var cWidth = Constants.canvasWidth; // shorter name
@@ -986,7 +987,7 @@ define('zombie',['./constants', './livePoint', './geometry'], function(Constants
 });
 
 /*******************************************************************************
- * Priority Queue
+ * Priority Queue - Array with ordered data
  */
 define('priorityQueue',[], function(){
     function PriorityQueue() {
@@ -1105,6 +1106,12 @@ define('theta',['./geometry', './point', './priorityQueue'], function(Geometry, 
 
 /*******************************************************************************
  * NodeList Object
+ *   - lineOfSight: returns whether p1 has los to p2
+ *   - hasNeighbors: returns whether neighbors variable has been set
+ *   - setNeighbors: calculates neighbors
+ *   - getNeighbors: returns neighbors
+ *   - getMutualNeighbors: gets neighbors p1 has in common with p2
+ *   - push: adds new node
  */
 define('nodeList',['./constants', './point', './Geometry'], function(Constants, Point, Geometry){
     function NodeList(obsMap){
@@ -1150,6 +1157,14 @@ define('nodeList',['./constants', './point', './Geometry'], function(Constants, 
 
 /*******************************************************************************
  * ZombieList Object
+ *   - timer: increments per frame, higher value means more zombies spawn
+ *   - killed: total number of zombies killed by player
+ *   - add: possibly adds new zombie depending on timer
+ *   - getPath: sets zombies path using theta* search
+ *   - update: updates each zombie for a new frame
+ *   - remove: removes dead and out of bounds zombies
+ *   - updateHash: moves zombies to correct hash index
+ *   - collide: attacks nearby opponents
  */
 define('zombieList',['./constants', './spacialHash', './zombie', './theta', './point', './nodeList'], function(Constants, SpacialHash, Zombie, Theta, Point, NodeList){
     function ZombieList(){
@@ -1226,7 +1241,7 @@ define('updater',['./constants', './zombie'], function(Constants, Zombie){
         worldMovement.move(keyMap, obsMap, player);
     }
     function obstacles(obsMap, worldMovement){
-        obsMap.move(worldMovement);
+        obsMap.adjust(worldMovement.dx, worldMovement.dy);
         obsMap.addWall();
     }
     function updateZombies(zombies, worldMovement, obsMap, bullets, player){
@@ -1237,29 +1252,24 @@ define('updater',['./constants', './zombie'], function(Constants, Zombie){
         for(let b of bullets)
             zombies.collide(b, bulletRange);
         zombies.collide(player, bulletRange);
-        return zombies;
     }
     function updateBullets(bullets, obsMap, world){
         bullets.move(world);
         bullets.remove(obsMap);
-        return bullets;
     }
     return function(objs){
-        document.getElementById("score").innerHTML = "Score: " + objs.score;
-        document.getElementById("health").innerHTML = "Health: " + objs.player.health;
-        updateZombies(objs.zombies, objs.worldMovement, objs.obsMap, objs.bullets, objs.player);
-        updateBullets(objs.bullets, objs.obsMap, objs.worldMovement);
-        world(objs.worldMovement, objs.obsMap, objs.keyMap, objs.player);
-        obstacles(objs.obsMap, objs.worldMovement);
-        objs.shotCounter--;
-        objs.score = objs.zombies.killed;
-
+        if(!objs.keyMap.paused){
+            updateZombies(objs.zombies, objs.worldMovement, objs.obsMap, objs.bullets, objs.player);
+            updateBullets(objs.bullets, objs.obsMap, objs.worldMovement);
+            world(objs.worldMovement, objs.obsMap, objs.keyMap, objs.player);
+            obstacles(objs.obsMap, objs.worldMovement);
+        }
         return !objs.player.dead();
     };
 });
 
 /*******************************************************************************
- * Renderer Constructor
+ * Renderer Function - Renders all objects to screen
  */
 define('renderer',['./constants'], function(Constants){
     var canvas = document.getElementById('gameStage');
@@ -1303,6 +1313,8 @@ define('renderer',['./constants'], function(Constants){
         }
     }
     return function(objs){
+        document.getElementById("score").innerHTML = "Score: " + objs.zombies.killed;
+        document.getElementById("health").innerHTML = "Health: " + objs.player.health;
         ctx.clearRect(0,0,Constants.canvasWidth,Constants.canvasHeight);
         world(objs.worldMovement);
         zombies(objs.zombies);
@@ -1317,18 +1329,13 @@ define('renderer',['./constants'], function(Constants){
  *  - arrow...: respond to key clicks
  *  - mouseClick: fire bullet
  *  - update/render: update and render the game using specialized objects
+ *  - reset: start game over
  */
-define('game',['./keyMap', './obstacleMap', './world', './player', './bulletList', './zombieList', './updater', './renderer'], function(KeyMap, ObstacleMap, World, Player, BulletList, ZombieList, Updater, Renderer){
-    var objs = {
-        keyMap: new KeyMap(),
-        player: new Player(),
-        bullets: new BulletList(),
-        zombies: new ZombieList(),
-        worldMovement: new World(),
-        obsMap: new ObstacleMap(),
-        shotCounter: 0,
-        score: 0
-    };
+define('game',['./keyMap', './obstacleMap', './world', './player',
+        './bulletList', './zombieList', './updater', './renderer'],
+       function(KeyMap, ObstacleMap, World, Player,
+                BulletList, ZombieList, Updater, Renderer){
+    var objs;
     return {
         arrowDown: function(e){
             objs.keyMap.arrowDown(e);
@@ -1338,12 +1345,9 @@ define('game',['./keyMap', './obstacleMap', './world', './player', './bulletList
         },
         mouseClick: function(e){
             var canvas = document.getElementById('gameStage');
-            if(objs.shotCounter < 1){
-                var mouseX = e.pageX - canvas.getBoundingClientRect().left;
-                var mouseY = e.pageY - canvas.getBoundingClientRect().top;
-                objs.bullets.add(mouseX, mouseY);
-                //objs.shotCounter = 15;
-            }
+            var mouseX = e.pageX - canvas.getBoundingClientRect().left;
+            var mouseY = e.pageY - canvas.getBoundingClientRect().top;
+            objs.bullets.add(mouseX, mouseY);
         },
         update: function(){
             return Updater(objs);
@@ -1351,6 +1355,16 @@ define('game',['./keyMap', './obstacleMap', './world', './player', './bulletList
         render: function(){
             Renderer(objs);
         },
+        reset: function(){
+            objs = {
+                keyMap: new KeyMap(),
+                player: new Player(),
+                bullets: new BulletList(),
+                zombies: new ZombieList(),
+                worldMovement: new World(),
+                obsMap: new ObstacleMap()
+            };
+        }
     };
 });
 
@@ -1361,6 +1375,30 @@ define('game',['./keyMap', './obstacleMap', './world', './player', './bulletList
  * July 2016             / /|  / /_/ /| |/ / / / / /                            *
  *                      /_/ |_/\__,_/ |___/_/_/ /_/                             *
  *                                                                              *
+ ********************************************************************************
+ * Code Structure:                                                              *
+ *   Main: starts game loop, checks keys pressed, updates, and renders          *
+ *     Contains a game object                                                   *
+ *   Game Object: defines update and render functions, contains all objects     *
+ *   Objects: KeyMap keeps track of buttons pressed                             *
+ *            Player is a LivePoint keeping track of the player                 *
+ *              LivePoint is a point with health, damage, and movement          *
+ *            Bullets contains and updates bullet objects                       *
+ *              Bullets are LivePoints that project outward from player         *
+ *            Zombies contains and updates zombie objects                       *
+ *              Zombies are livePoints that follow player and attack on impact  *
+ *            WorldMovement keeps track of backround movement for sidescrolling *
+ *            obsMap contains and updates obstacle objects                      *
+ *              Obstacles are a collection of lines, and points representing    *
+ *              walls and edges used to walk around walls                       *
+ *   Helpers: Geometry calculates math stuff                                    *
+ *            Constants keeps track of constant values                          *
+ *            2dArray makes an easier interface for array arrays                *
+ *            SpacialHash is an efficient way of storing zombies for collisions *
+ *            PriorityQueue is an easier interface for prioritizing data        *
+ *            Theta uses a lazy theta algorithm to calculate paths for zombies  *
+ *            NodeList contains and calculates possible path nodes for zombies  *
+ *                                                                              *
  *******************************************************************************/
 
 
@@ -1370,12 +1408,10 @@ requirejs.config({
 });
 requirejs(['constants', 'game'], function(Constants, Game){
     function Main(){
-        // Test
-        // outdated Test();
-        
         // Interface variables
         var gameLoop;
         var gameObj = Game;
+        gameObj.reset();
 
         // respond to events
         document.getElementById("doc").onkeydown = gameObj.arrowDown;
@@ -1386,7 +1422,6 @@ requirejs(['constants', 'game'], function(Constants, Game){
         function mainloop(){
             if(!gameObj.update()){
                 clearInterval(gameLoop);
-                Main();
             }
             gameObj.render();
         }
@@ -1394,6 +1429,7 @@ requirejs(['constants', 'game'], function(Constants, Game){
         // run game
         document.getElementById("start").onclick = function(){
             clearInterval(gameLoop);
+            gameObj.reset();
             gameLoop = setInterval(mainloop, Constants.frameTime);
         }
     }
